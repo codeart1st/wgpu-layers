@@ -1,11 +1,12 @@
+use raw_window_handle::HasRawWindowHandle;
+
 mod renderer;
 mod offscreen_window;
+use log::info;
 
 #[cfg(target_arch = "wasm32")]
 mod wasm {
   use wasm_bindgen::prelude::*;
-  use wasm_bindgen::JsCast;
-  use log::info;
 
   // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
   // allocator.
@@ -21,16 +22,15 @@ mod wasm {
     #[cfg(feature = "console_log")]
     console_log::init_with_level(log::Level::Info).expect("error initializing logger");
 
-    let context = canvas
-      .get_context("webgpu")
-      .unwrap()
-      .unwrap()
-      .dyn_into::<web_sys::GpuCanvasContext>()
-      .unwrap();
-
-    info!("{:?}", context);
-
     let window = super::offscreen_window::OffscreenWindow::new();
-    let renderer = super::renderer::Renderer::new(&window, (canvas.width(), canvas.height())).await;
+    super::init(&window, (canvas.width(), canvas.height())).await;
   }
+}
+
+pub async fn init<W: HasRawWindowHandle>(window: &W, size: (u32, u32)) {
+  let renderer = renderer::Renderer::new(window, size).await;
+
+  info!("renderer initialized");
+
+  renderer.test_draw();
 }

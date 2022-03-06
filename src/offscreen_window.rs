@@ -6,11 +6,9 @@ pub struct OffscreenWindow {
 
 impl OffscreenWindow {
   pub fn new() -> Self {
-    let mut handle = WebHandle::empty();
-    handle.id = 1;
-
     Self {
-      handle
+      // currently not needed inside web worker
+      handle: WebHandle::empty()
     }
   }
 }

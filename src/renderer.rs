@@ -66,4 +66,32 @@ impl Renderer {
       surface_config
     }
   }
+
+  pub fn test_draw(&self) {
+    let mut command_encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+      label: None
+    });
+
+    let surface_texture = self.surface.get_current_texture()
+      .expect("Can't get current texture");
+
+    let view = surface_texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
+    {
+      command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        label: None,
+        color_attachments: &[wgpu::RenderPassColorAttachment {
+          view: &view,
+          resolve_target: None,
+          ops: wgpu::Operations {
+            load: wgpu::LoadOp::Clear(wgpu::Color::BLUE),
+            store: true
+          }
+        }],
+        depth_stencil_attachment: None
+      });
+    }
+
+    self.queue.submit(command_encoder.finish().try_into());
+    surface_texture.present();
+  }
 }

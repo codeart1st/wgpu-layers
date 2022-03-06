@@ -13,6 +13,9 @@ module.exports = {
       patterns: ['index.html']
     })
   ],
+  watchOptions: {
+    poll: 3000
+  },
   experiments: {
     asyncWebAssembly: true
   }
