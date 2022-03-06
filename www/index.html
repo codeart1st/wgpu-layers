@@ -1,11 +1,22 @@
 <!DOCTYPE html>
-<html>
+<html lang='en'>
   <head>
-    <meta charset="utf-8">
-    <title>Hello wasm-pack!</title>
+    <meta charset='utf-8'>
+    <title>wgpu-layers</title>
+    <style type='text/css'>
+      body {
+        margin: 0;
+      }
+
+      canvas {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+      }
+    </style>
   </head>
   <body>
-    <noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
-    <script src="./bootstrap.js"></script>
+    <canvas data-raw-handle='1'></canvas>
+    <script src='./index.js'></script>
   </body>
 </html>
