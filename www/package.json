@@ -8,6 +8,7 @@
     "start": "webpack-dev-server"
   },
   "dependencies": {
+    "ol": "6.13.0",
     "wgpu-layers": "file:../pkg"
   },
   "devDependencies": {

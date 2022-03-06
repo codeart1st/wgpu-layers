@@ -83,7 +83,12 @@ impl Renderer {
           view: &view,
           resolve_target: None,
           ops: wgpu::Operations {
-            load: wgpu::LoadOp::Clear(wgpu::Color::BLUE),
+            load: wgpu::LoadOp::Clear(wgpu::Color {
+              r: 0.0,
+              g: 0.0,
+              b: 1.0,
+              a: 0.4
+            }),
             store: true
           }
         }],
