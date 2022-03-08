@@ -1,4 +1,4 @@
-import * as wasm from 'wgpu-layers'
+import init, { initThreadPool, start } from 'wgpu-layers'
 
 import { READY, CANVAS } from './types'
 
@@ -13,13 +13,20 @@ self.window.document = {
   }
 }
 
-self.onmessage = ({ data: { type, payload } }) => {
+self.onmessage = async ({ data: { type, payload } }) => {
   switch (type) {
     case CANVAS:
       canvas = payload.canvas
-      wasm.start(canvas)
+      await start(canvas)
       break
   }
 }
 
-self.postMessage({ type: READY })
+async function run() {
+  await init()
+  await initThreadPool(navigator.hardwareConcurrency)
+
+  self.postMessage({ type: READY })
+}
+
+run()

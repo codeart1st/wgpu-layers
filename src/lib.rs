@@ -14,6 +14,8 @@ mod wasm {
   #[global_allocator]
   static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
+  pub use wasm_bindgen_rayon::init_thread_pool;
+
   #[wasm_bindgen]
   pub async fn start(canvas: web_sys::OffscreenCanvas) {
     #[cfg(feature = "console_error_panic_hook")]

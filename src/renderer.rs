@@ -1,4 +1,5 @@
 use log::info;
+use rayon::prelude::*;
 
 pub struct Renderer {
 
@@ -24,6 +25,8 @@ impl Renderer {
 
     let surface;
     unsafe { surface = instance.create_surface(&window); };
+
+    info!("surface: {:?}", &surface);
 
     let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
       power_preference: wgpu::PowerPreference::HighPerformance,
@@ -95,6 +98,12 @@ impl Renderer {
         depth_stencil_attachment: None
       });
     }
+
+    (0..100).into_par_iter()
+      .for_each(|i| {
+        info!("{}", i);
+        info!("{:?}", self.device)
+      });
 
     self.queue.submit(command_encoder.finish().try_into());
     surface_texture.present();
