@@ -10,7 +10,7 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = ["wee_alloc", "console_error_panic_hook", "console_log"]
+default = ["console_error_panic_hook", "console_log"]
 
 [dependencies]
 log = "0.4.14"
@@ -32,13 +32,6 @@ web-sys = { version = "0.3.56", features = [
 # all the `std::fmt` and `std::panicking` infrastructure, so isn't great for
 # code size when deploying.
 console_error_panic_hook = { version = "0.1.7", optional = true }
-
-# `wee_alloc` is a tiny allocator for wasm that is only ~1K in code size
-# compared to the default allocator's ~10K. It is slower than the default
-# allocator, however.
-#
-# Unfortunately, `wee_alloc` requires nightly Rust when targeting wasm for now.
-wee_alloc = { version = "0.4.5", optional = true }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.29"

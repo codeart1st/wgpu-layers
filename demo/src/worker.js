@@ -24,7 +24,7 @@ self.onmessage = async ({ data: { type, payload } }) => {
 
 async function run() {
   await init()
-  await initThreadPool(navigator.hardwareConcurrency)
+  await initThreadPool(navigator.hardwareConcurrency - 1)
 
   self.postMessage({ type: READY })
 }
