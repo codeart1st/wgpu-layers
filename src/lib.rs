@@ -1,9 +1,9 @@
-use log::info;
 use geo_types::polygon;
+use log::info;
 use rayon::prelude::*;
 
-pub mod renderer;
 mod bucket;
+pub mod renderer;
 
 #[cfg(target_arch = "wasm32")]
 mod wasm {
@@ -62,10 +62,13 @@ pub async fn init<W: renderer::ToSurface>(window: &W, size: (u32, u32)) {
           (x: 0.25, y: 0.25)
         ]
       ]
-    )).try_into().expect("Can't convert polygon to geometry");
+    ))
+    .try_into()
+    .expect("Can't convert polygon to geometry");
+
     let test_feature = bucket::feature::Feature {
       geometry: test_geometry,
-      properties: None
+      properties: None,
     };
 
     bucket.add_features(vec![test_feature]);

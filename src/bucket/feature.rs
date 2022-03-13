@@ -8,7 +8,7 @@ pub trait WithGeometry<T> {
 pub struct Feature<T> {
   pub geometry: T,
 
-  pub properties: Option<Map<String, String>>
+  pub properties: Option<Map<String, String>>,
 }
 
 impl<T> WithGeometry<T> for Feature<T> {

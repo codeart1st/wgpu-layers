@@ -1,6 +1,6 @@
-use wgpu::util::DeviceExt;
 use geo_types::Geometry::*;
 use log::info;
+use wgpu::util::DeviceExt;
 
 pub mod feature;
 
@@ -28,7 +28,7 @@ pub struct Bucket<'a, F> {
   /// index buffer
   index_wgpu_buffer: Option<wgpu::Buffer>,
 
-  index_buffer: Vec<u16>
+  index_buffer: Vec<u16>,
 }
 
 impl<'a, F> Bucket<'a, F> {
@@ -36,24 +36,26 @@ impl<'a, F> Bucket<'a, F> {
     info!("{:?}", device);
     let shader_module = device.create_shader_module(&wgpu::ShaderModuleDescriptor {
       label: None,
-      source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!("shader/bucket.wgsl").into()))
+      source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(
+        include_str!("shader/bucket.wgsl").into(),
+      )),
     });
 
     let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
       label: None,
-      entries: &[]
+      entries: &[],
     });
 
     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
       label: None,
       layout: &bind_group_layout,
-      entries: &[]
+      entries: &[],
     });
 
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
       label: None,
       bind_group_layouts: &[&bind_group_layout],
-      push_constant_ranges: &[]
+      push_constant_ranges: &[],
     });
 
     let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -62,19 +64,15 @@ impl<'a, F> Bucket<'a, F> {
       vertex: wgpu::VertexState {
         module: &shader_module,
         entry_point: "vs_main",
-        buffers: &[
-          wgpu::VertexBufferLayout {
-            array_stride: 8,
-            step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &[
-              wgpu::VertexAttribute {
-                format: wgpu::VertexFormat::Float32x2,
-                offset: 0,
-                shader_location: 0
-              }
-            ]
-          }
-        ]
+        buffers: &[wgpu::VertexBufferLayout {
+          array_stride: 8,
+          step_mode: wgpu::VertexStepMode::Vertex,
+          attributes: &[wgpu::VertexAttribute {
+            format: wgpu::VertexFormat::Float32x2,
+            offset: 0,
+            shader_location: 0,
+          }],
+        }],
       },
       fragment: Some(wgpu::FragmentState {
         module: &shader_module,
@@ -82,13 +80,13 @@ impl<'a, F> Bucket<'a, F> {
         targets: &[wgpu::ColorTargetState {
           format: *texture_format,
           blend: None,
-          write_mask: wgpu::ColorWrites::ALL
-        }]
+          write_mask: wgpu::ColorWrites::ALL,
+        }],
       }),
       primitive: wgpu::PrimitiveState::default(),
       multisample: wgpu::MultisampleState::default(),
       depth_stencil: None,
-      multiview: None
+      multiview: None,
     });
 
     Self {
@@ -99,23 +97,23 @@ impl<'a, F> Bucket<'a, F> {
       vertex_wgpu_buffer: None,
       vertex_buffer: Vec::with_capacity(0),
       index_wgpu_buffer: None,
-      index_buffer: Vec::with_capacity(0)
+      index_buffer: Vec::with_capacity(0),
     }
   }
 
   pub fn render<'b>(&'b self, pass: &mut wgpu::RenderPass<'b>) {
-    match (self.vertex_wgpu_buffer.as_ref(), self.index_wgpu_buffer.as_ref()) {
-      (
-        Some(vertex_buffer),
-        Some(index_buffer)
-      ) => {
+    match (
+      self.vertex_wgpu_buffer.as_ref(),
+      self.index_wgpu_buffer.as_ref(),
+    ) {
+      (Some(vertex_buffer), Some(index_buffer)) => {
         pass.set_pipeline(&self.pipeline);
         pass.set_bind_group(0, &self.bind_group, &[]);
 
         pass.set_vertex_buffer(0, vertex_buffer.slice(..));
         pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16);
         pass.draw_indexed(0..self.index_buffer.len() as u32, 0, 0..1);
-      },
+      }
       _ => {
         info!("No features found")
       }
@@ -124,7 +122,7 @@ impl<'a, F> Bucket<'a, F> {
 
   pub fn add_features(&mut self, mut features: Vec<F>)
   where
-    F: feature::WithGeometry<geo_types::Geometry<f32>>
+    F: feature::WithGeometry<geo_types::Geometry<f32>>,
   {
     for feature in features.iter() {
       let geometry = feature.get_geometry();
@@ -152,9 +150,9 @@ impl<'a, F> Bucket<'a, F> {
           }
           let indices = earcutr::earcut(&vertices, &hole_indices, DIMENSIONS);
           self.vertex_buffer.append(&mut vertices);
-          self.index_buffer.append(&mut indices.iter()
-            .map(|i| *i as u16).collect()
-          );
+          self
+            .index_buffer
+            .append(&mut indices.iter().map(|i| *i as u16).collect());
         }
         _ => {
           info!("Geometry type currently not supported");
@@ -163,16 +161,20 @@ impl<'a, F> Bucket<'a, F> {
     }
     self.features.append(&mut features);
 
-    self.vertex_wgpu_buffer = Some(self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-      label: None,
-      contents: bytemuck::cast_slice(&self.vertex_buffer),
-      usage: wgpu::BufferUsages::VERTEX
-    }));
+    self.vertex_wgpu_buffer = Some(self.device.create_buffer_init(
+      &wgpu::util::BufferInitDescriptor {
+        label: None,
+        contents: bytemuck::cast_slice(&self.vertex_buffer),
+        usage: wgpu::BufferUsages::VERTEX,
+      },
+    ));
 
-    self.index_wgpu_buffer = Some(self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-      label: None,
-      contents: bytemuck::cast_slice(&self.index_buffer),
-      usage: wgpu::BufferUsages::INDEX
-    }));
+    self.index_wgpu_buffer = Some(self.device.create_buffer_init(
+      &wgpu::util::BufferInitDescriptor {
+        label: None,
+        contents: bytemuck::cast_slice(&self.index_buffer),
+        usage: wgpu::BufferUsages::INDEX,
+      },
+    ));
   }
 }
