@@ -1,6 +1,6 @@
 use log::info;
 
-mod renderer;
+pub mod renderer;
 
 #[cfg(target_arch = "wasm32")]
 mod wasm {

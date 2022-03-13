@@ -11,3 +11,9 @@ Firefox dom.webgpu.enabled and gfx.offscreencanvas.enabled but still missing int
 ```sh
 wasm-pack build --target web
 ```
+
+# Run a native example
+
+```sh
+cargo run --example window --target `rustc -vV | sed -n 's|host: ||p'`
+```
