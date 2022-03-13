@@ -1,5 +1,8 @@
+use std::fmt::Debug;
+
 use log::info;
-use rayon::prelude::*;
+
+use crate::bucket::Bucket;
 
 pub struct Renderer {
 
@@ -74,7 +77,11 @@ impl Renderer {
     }
   }
 
-  pub fn test_draw(&self) {
+  pub fn create_bucket<T>(&self) -> Bucket<T> {
+    Bucket::new(&self.device, &self.texture_format)
+  }
+
+  pub fn render<T: Debug>(&self, buckets: Vec<Bucket<T>>) {
     let mut command_encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
       label: None
     });
@@ -83,31 +90,42 @@ impl Renderer {
       .expect("Can't get current texture");
 
     let view = surface_texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
-    {
-      command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+
+    command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+      label: None,
+      color_attachments: &[wgpu::RenderPassColorAttachment {
+        view: &view,
+        resolve_target: None,
+        ops: wgpu::Operations {
+          load: wgpu::LoadOp::Clear(wgpu::Color {
+            r: 0.0,
+            g: 0.0,
+            b: 1.0,
+            a: 0.4
+          }),
+          store: true
+        }
+      }],
+      depth_stencil_attachment: None
+    });
+
+    for bucket in buckets.iter() {
+      let mut pass = command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
         label: None,
         color_attachments: &[wgpu::RenderPassColorAttachment {
           view: &view,
           resolve_target: None,
           ops: wgpu::Operations {
-            load: wgpu::LoadOp::Clear(wgpu::Color {
-              r: 0.0,
-              g: 0.0,
-              b: 1.0,
-              a: 0.4
-            }),
+            load: wgpu::LoadOp::Load,
             store: true
           }
         }],
         depth_stencil_attachment: None
       });
-    }
 
-    (0..100).into_par_iter()
-      .for_each(|i| {
-        info!("{}", i);
-        info!("{:?}", self.device)
-      });
+      info!("{:?}", bucket);
+      bucket.render(&mut pass);
+    }
 
     self.queue.submit(command_encoder.finish().try_into());
     surface_texture.present();

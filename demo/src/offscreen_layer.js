@@ -18,6 +18,8 @@ export class OffscreenLayer extends Layer {
       switch (type) {
         case READY:
           const offscreen = canvas.transferControlToOffscreen()
+          offscreen.width = canvas.clientWidth
+          offscreen.height = canvas.clientHeight
           worker.postMessage({ type: CANVAS, payload: {
             canvas: offscreen
           } }, [offscreen])
