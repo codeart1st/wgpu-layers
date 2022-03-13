@@ -19,12 +19,16 @@ pub struct Renderer {
   surface_config: wgpu::SurfaceConfiguration
 }
 
+pub trait ToSurface {
+  unsafe fn create_surface(&self, instance: &wgpu::Instance) -> wgpu::Surface;
+}
+
 impl Renderer {
-  pub async fn new<W: raw_window_handle::HasRawWindowHandle>(window: &W, (width, height): (u32, u32)) -> Self {
+  pub async fn new<W: ToSurface>(window: &W, (width, height): (u32, u32)) -> Self {
     let instance = wgpu::Instance::new(wgpu::Backends::all());
 
     let surface;
-    unsafe { surface = instance.create_surface(&window); };
+    unsafe { surface = window.create_surface(&instance); };
 
     info!("surface: {:?}", &surface);
 

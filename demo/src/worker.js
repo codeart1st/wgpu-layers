@@ -6,12 +6,6 @@ let canvas
 
 // https://github.com/gfx-rs/wgpu/issues/1986
 self.Window = WorkerGlobalScope
-self.window = self
-self.window.document = {
-  querySelectorAll: () => {
-    return [canvas]
-  }
-}
 
 self.onmessage = async ({ data: { type, payload } }) => {
   switch (type) {
