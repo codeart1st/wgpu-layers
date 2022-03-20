@@ -1,5 +1,5 @@
 import { Layer } from 'ol/layer'
-import { READY, CANVAS } from './types'
+import { READY, CANVAS, FRAME_STATE } from './types'
 
 export class OffscreenLayer extends Layer {
   createContainer() {
@@ -13,16 +13,18 @@ export class OffscreenLayer extends Layer {
     canvas.style.height = '100%'
     container.appendChild(canvas)
 
-    const worker = new Worker(new URL('./worker', import.meta.url))
-    worker.onmessage = ({ data: { type } }) => {
+    this.worker = new Worker(new URL('./worker', import.meta.url))
+    this.worker.onmessage = ({ data: { type } }) => {
       switch (type) {
         case READY:
           const offscreen = canvas.transferControlToOffscreen()
           offscreen.width = canvas.clientWidth
           offscreen.height = canvas.clientHeight
-          worker.postMessage({ type: CANVAS, payload: {
-            canvas: offscreen
-          } }, [offscreen])
+          this.worker.postMessage({
+            type: CANVAS, payload: {
+              canvas: offscreen
+            }
+          }, [offscreen])
           break
       }
     }
@@ -36,10 +38,16 @@ export class OffscreenLayer extends Layer {
     }
   }
 
-  render() {
+  render(frameState) {
     if (!this.container_) {
       this.container_ = this.createContainer()
     }
+    this.worker.postMessage({
+      type: FRAME_STATE,
+      payload: {
+        coordinateToPixelTransform: frameState.coordinateToPixelTransform
+      }
+    })
     return this.container_
   }
 }

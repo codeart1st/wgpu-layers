@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use log::info;
 
-use crate::bucket::Bucket;
+use crate::{bucket::Bucket, view::View};
 
 pub struct Renderer {
   /// wgpu device
@@ -10,6 +10,9 @@ pub struct Renderer {
 
   /// preferred texutre format of surface
   pub texture_format: wgpu::TextureFormat,
+
+  /// used view
+  pub view: View,
 
   /// wgpu queue
   queue: wgpu::Queue,
@@ -78,6 +81,7 @@ impl Renderer {
     Self {
       device,
       texture_format,
+      view: View::new((width, height)),
       surface,
       queue,
       surface_config,
@@ -85,7 +89,7 @@ impl Renderer {
   }
 
   pub fn create_bucket<T>(&self) -> Bucket<T> {
-    Bucket::new(&self.device, &self.texture_format)
+    Bucket::new(&self.device, &self.texture_format, &self.view)
   }
 
   pub fn render<T: Debug>(&self, buckets: Vec<Bucket<T>>) {
@@ -134,8 +138,7 @@ impl Renderer {
         depth_stencil_attachment: None,
       });
 
-      info!("{:?}", bucket);
-      bucket.render(&mut pass);
+      bucket.render(&mut pass, &self.queue, &self.view);
     }
 
     self.queue.submit(command_encoder.finish().try_into());

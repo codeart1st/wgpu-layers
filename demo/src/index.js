@@ -15,7 +15,7 @@ function start() {
       new OffscreenLayer({})
     ],
     view: new View({
-      center: fromLonLat([37.41, 8.82]),
+      center: [0, 0],//[1458675.916789971, 6911404.021700942],
       zoom: 4
     })
   })

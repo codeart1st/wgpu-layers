@@ -9,7 +9,7 @@ Firefox dom.webgpu.enabled and gfx.offscreencanvas.enabled but still missing int
 # Build the project
 
 ```sh
-wasm-pack build --target web
+wasm-pack build --target web --dev
 ```
 
 # Run a native example

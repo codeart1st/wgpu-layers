@@ -1,9 +1,9 @@
 use geo_types::polygon;
 use log::info;
-use rayon::prelude::*;
 
 mod bucket;
 pub mod renderer;
+mod view;
 
 #[cfg(target_arch = "wasm32")]
 mod wasm {
@@ -18,50 +18,40 @@ mod wasm {
   }
 
   #[wasm_bindgen]
-  pub async fn start(canvas: web_sys::OffscreenCanvas) {
+  pub async fn start(canvas: web_sys::OffscreenCanvas) -> JsValue {
     #[cfg(feature = "console_error_panic_hook")]
     console_error_panic_hook::set_once();
 
     #[cfg(feature = "console_log")]
     console_log::init_with_level(log::Level::Info).expect("error initializing logger");
 
-    super::init(&canvas, (canvas.width(), canvas.height())).await;
+    Closure::wrap(
+      Box::new(super::init(&canvas, (canvas.width(), canvas.height())).await)
+        as Box<dyn FnMut(Vec<f32>)>,
+    )
+    .into_js_value()
   }
 }
 
-pub async fn init<W: renderer::ToSurface>(window: &W, size: (u32, u32)) {
-  let renderer = renderer::Renderer::new(window, size).await;
+pub async fn init<W: renderer::ToSurface>(window: &W, size: (u32, u32)) -> impl FnMut(Vec<f32>) {
+  let mut renderer = renderer::Renderer::new(window, size).await;
 
   info!("renderer initialized");
 
-  let buckets: Vec<bucket::Bucket<bucket::feature::Feature<geo_types::Geometry<f32>>>> = vec![];
-  renderer.render(buckets);
+  move |view_matrix: Vec<f32>| {
+    info!("{:?}", view_matrix);
+    renderer.view.view_matrix = view_matrix.try_into().expect("View matrix is wrong");
 
-  (0..1).into_par_iter().for_each(|x| {
     let mut bucket = renderer.create_bucket();
 
-    // EPSG:3857
     let test_geometry: geo_types::Geometry<f32> = (polygon!(
       exterior: [
-        /*(x: 1458675.916789971, y: 6911404.021700942),
-        (x: 1527996.1263083573, y: 6910479.752240697),
-        (x: 1487328.2700575707, y: 6858720.662466968),
-        (x: 1458675.916789971, y: 6911404.021700942)*/
-        (x: -0.5, y: 0.5),
-        (x: -0.5, y: -0.5),
-        (x: 0.5, y: -0.5),
-        (x: 0.5, y: 0.5),
-        (x: -0.5, y: 0.5)
+        (x: -3862117.868494708, y: 9809176.416636087),
+        (x: 8579526.353004107, y: 9915819.08139179),
+        (x: 901254.4905934092, y: 1597691.2304468695),
+        (x: -3862117.868494708, y: 9809176.416636087)
       ],
-      interiors: [
-        [
-          (x: 0.25, y: 0.25),
-          (x: 0.25, y: -0.25),
-          (x: -0.25, y: -0.25),
-          (x: -0.25, y: 0.25),
-          (x: 0.25, y: 0.25)
-        ]
-      ]
+      interiors: []
     ))
     .try_into()
     .expect("Can't convert polygon to geometry");
@@ -74,5 +64,5 @@ pub async fn init<W: renderer::ToSurface>(window: &W, size: (u32, u32)) {
     bucket.add_features(vec![test_feature]);
 
     renderer.render(vec![bucket]);
-  });
+  }
 }

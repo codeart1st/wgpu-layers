@@ -2,6 +2,8 @@ use geo_types::Geometry::*;
 use log::info;
 use wgpu::util::DeviceExt;
 
+use crate::view::View;
+
 pub mod feature;
 
 const DIMENSIONS: usize = 2;
@@ -29,27 +31,47 @@ pub struct Bucket<'a, F> {
   index_wgpu_buffer: Option<wgpu::Buffer>,
 
   index_buffer: Vec<u16>,
+
+  /// world buffer
+  world_buffer: wgpu::Buffer,
 }
 
 impl<'a, F> Bucket<'a, F> {
-  pub fn new(device: &'a wgpu::Device, texture_format: &wgpu::TextureFormat) -> Self {
-    info!("{:?}", device);
+  pub fn new(device: &'a wgpu::Device, texture_format: &wgpu::TextureFormat, view: &View) -> Self {
     let shader_module = device.create_shader_module(&wgpu::ShaderModuleDescriptor {
       label: None,
-      source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(
-        include_str!("shader/bucket.wgsl").into(),
-      )),
+      source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!(
+        "shader/bucket.wgsl"
+      ))),
     });
 
     let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
       label: None,
-      entries: &[],
+      entries: &[wgpu::BindGroupLayoutEntry {
+        binding: 0,
+        visibility: wgpu::ShaderStages::VERTEX,
+        ty: wgpu::BindingType::Buffer {
+          ty: wgpu::BufferBindingType::Uniform,
+          has_dynamic_offset: false,
+          min_binding_size: None,
+        },
+        count: None,
+      }],
+    });
+
+    let world_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+      label: None,
+      contents: bytemuck::cast_slice(&view.view_matrix),
+      usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
     });
 
     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
       label: None,
       layout: &bind_group_layout,
-      entries: &[],
+      entries: &[wgpu::BindGroupEntry {
+        binding: 0,
+        resource: world_buffer.as_entire_binding(),
+      }],
     });
 
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -98,10 +120,11 @@ impl<'a, F> Bucket<'a, F> {
       vertex_buffer: Vec::with_capacity(0),
       index_wgpu_buffer: None,
       index_buffer: Vec::with_capacity(0),
+      world_buffer,
     }
   }
 
-  pub fn render<'b>(&'b self, pass: &mut wgpu::RenderPass<'b>) {
+  pub fn render<'b>(&'b self, pass: &mut wgpu::RenderPass<'b>, queue: &wgpu::Queue, view: &View) {
     match (
       self.vertex_wgpu_buffer.as_ref(),
       self.index_wgpu_buffer.as_ref(),
@@ -109,6 +132,12 @@ impl<'a, F> Bucket<'a, F> {
       (Some(vertex_buffer), Some(index_buffer)) => {
         pass.set_pipeline(&self.pipeline);
         pass.set_bind_group(0, &self.bind_group, &[]);
+
+        queue.write_buffer(
+          &self.world_buffer,
+          0,
+          bytemuck::cast_slice(&view.view_matrix),
+        );
 
         pass.set_vertex_buffer(0, vertex_buffer.slice(..));
         pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16);
@@ -140,7 +169,7 @@ impl<'a, F> Bucket<'a, F> {
           let mut vertices = Vec::with_capacity(vertex_count * DIMENSIONS);
           let mut hole_indices = Vec::new();
           for (i, ring) in rings.iter().enumerate() {
-            for coord in ring.coords().into_iter() {
+            for coord in ring.coords() {
               vertices.push(coord.x);
               vertices.push(coord.y);
             }
