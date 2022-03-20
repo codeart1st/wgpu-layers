@@ -23,7 +23,6 @@ self.onmessage = async ({ data: { type, payload } }) => {
 }
 
 function getViewMatrix(coordinateToPixelTransform, width, height) {
-  console.log(coordinateToPixelTransform)
   const half_width = width * .5
   const half_height = height * .5
   return [

@@ -39,7 +39,6 @@ pub async fn init<W: renderer::ToSurface>(window: &W, size: (u32, u32)) -> impl 
   info!("renderer initialized");
 
   move |view_matrix: Vec<f32>| {
-    info!("{:?}", view_matrix);
     renderer.view.view_matrix = view_matrix.try_into().expect("View matrix is wrong");
 
     let mut bucket = renderer.create_bucket();
