@@ -27,19 +27,29 @@ mod wasm {
 
     Closure::wrap(
       Box::new(super::init(&canvas, (canvas.width(), canvas.height())).await)
-        as Box<dyn FnMut(Vec<f32>)>,
+        as Box<dyn FnMut(Vec<f32>, Vec<u32>)>,
     )
     .into_js_value()
   }
 }
 
-pub async fn init<W: renderer::ToSurface>(window: &W, size: (u32, u32)) -> impl FnMut(Vec<f32>) {
+pub async fn init<W: renderer::ToSurface>(
+  window: &W,
+  size: (u32, u32),
+) -> impl FnMut(Vec<f32>, Vec<u32>) {
   let mut renderer = renderer::Renderer::new(window, size).await;
 
   info!("renderer initialized");
 
-  move |view_matrix: Vec<f32>| {
+  let mut current_size = size;
+
+  move |view_matrix: Vec<f32>, new_size: Vec<u32>| {
     renderer.view.view_matrix = view_matrix.try_into().expect("View matrix is wrong");
+
+    if current_size.0 != new_size[0] || current_size.1 != new_size[1] {
+      current_size = (new_size[0], new_size[1]);
+      renderer.set_size(current_size);
+    }
 
     let mut bucket = renderer.create_bucket();
 

@@ -92,6 +92,12 @@ impl Renderer {
     Bucket::new(&self.device, &self.texture_format, &self.view)
   }
 
+  pub fn set_size(&mut self, (width, height): (u32, u32)) {
+    self.surface_config.width = width;
+    self.surface_config.height = height;
+    self.surface.configure(&self.device, &self.surface_config);
+  }
+
   pub fn render<T: Debug>(&self, buckets: Vec<Bucket<T>>) {
     let mut command_encoder = self
       .device
@@ -115,8 +121,8 @@ impl Renderer {
           load: wgpu::LoadOp::Clear(wgpu::Color {
             r: 0.0,
             g: 0.0,
-            b: 1.0,
-            a: 0.4,
+            b: 0.0,
+            a: 0.0,
           }),
           store: true,
         },
