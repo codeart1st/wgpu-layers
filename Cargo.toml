@@ -14,9 +14,10 @@ default = ["console_error_panic_hook", "console_log"]
 log = "0.4.14"
 wgpu = "0.12.0"
 rayon = "1.5.1"
-geo-types = "0.7.2"
-bytemuck = "1.7.3"
+geo-types = "0.7.3"
+bytemuck = "1.9.0"
 earcutr = "0.2.0"
+prost = { version = "0.10.0", default-features = false, features = ["prost-derive"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2.79"
@@ -40,6 +41,9 @@ winit = "0.26.1"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.29"
+
+[build-dependencies]
+prost-build = "0.10.0"
 
 [profile.release]
 # Tell `rustc` to optimize for small code size.

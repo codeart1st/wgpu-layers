@@ -5,8 +5,13 @@ mod bucket;
 pub mod renderer;
 mod view;
 
+mod vector_tile {
+  include!(concat!(env!("OUT_DIR"), "/vector_tile.rs"));
+}
+
 #[cfg(target_arch = "wasm32")]
 mod wasm {
+  use prost::Message;
   use wasm_bindgen::prelude::*;
 
   pub use wasm_bindgen_rayon::init_thread_pool;
@@ -18,12 +23,16 @@ mod wasm {
   }
 
   #[wasm_bindgen]
-  pub async fn start(canvas: web_sys::OffscreenCanvas) -> JsValue {
+  pub async fn start(canvas: web_sys::OffscreenCanvas, vector_tile: Vec<u8>) -> JsValue {
     #[cfg(feature = "console_error_panic_hook")]
     console_error_panic_hook::set_once();
 
     #[cfg(feature = "console_log")]
     console_log::init_with_level(log::Level::Info).expect("error initializing logger");
+
+    let tile = super::vector_tile::Tile::decode(&*vector_tile).expect("parsing error");
+
+    log::info!("{:?}", tile);
 
     Closure::wrap(
       Box::new(super::init(&canvas, (canvas.width(), canvas.height())).await)

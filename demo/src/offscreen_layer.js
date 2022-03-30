@@ -30,6 +30,12 @@ export class OffscreenLayer extends Layer {
     }
   }
 
+  async getTestVectorTileArrayBuffer() {
+    const url = './polygon-with-inner.pbf'
+    const response = await fetch(url)
+    return await response.arrayBuffer()
+  }
+
   createContainer() {
     const container = document.createElement('div')
     container.style.position = 'absolute'
@@ -61,7 +67,7 @@ export class OffscreenLayer extends Layer {
     this.ctx = ctx
 
     this.worker = new Worker(new URL('./worker', import.meta.url))
-    this.worker.onmessage = ({ data: { type, payload } }) => {
+    this.worker.onmessage = async ({ data: { type, payload } }) => {
       switch (type) {
         case READY:
           const offscreen = offscreenCanvas.transferControlToOffscreen()
@@ -72,11 +78,14 @@ export class OffscreenLayer extends Layer {
           canvas.width = offscreenCanvas.clientWidth
           canvas.height = offscreenCanvas.clientHeight
 
+          const vectorTile = await this.getTestVectorTileArrayBuffer()
+
           this.worker.postMessage({
             type: CANVAS, payload: {
-              canvas: offscreen
+              canvas: offscreen,
+              data: vectorTile
             }
-          }, [offscreen])
+          }, [offscreen, vectorTile])
           break
         case RENDERED:
           requestAnimationFrame(() => {

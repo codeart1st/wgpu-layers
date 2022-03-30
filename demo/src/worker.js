@@ -12,7 +12,7 @@ self.onmessage = async ({ data: { type, payload } }) => {
   switch (type) {
     case CANVAS:
       canvas = payload.canvas
-      render = await start(canvas)
+      render = await start(canvas, new Uint8Array(payload.data))
       break
     case FRAME_STATE:
       const { frameState: { size, viewState, coordinateToPixelTransform } } = payload
