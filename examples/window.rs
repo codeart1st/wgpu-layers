@@ -51,7 +51,7 @@ async fn start(
     -0.27666306, -0.7963807, 1.0, 0.0,
     0.0, 0.0, 0.0, 1.0,
   ];
-  render(view_matrix);
+  render(view_matrix, vec![size.width, size.height]);
 
   info!("renderer init");
 

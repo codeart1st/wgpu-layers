@@ -1,4 +1,4 @@
-use std::iter::Map;
+use std::collections::HashMap;
 
 pub trait WithGeometry<T> {
   fn get_geometry(&self) -> &T;
@@ -8,7 +8,7 @@ pub trait WithGeometry<T> {
 pub struct Feature<T> {
   pub geometry: T,
 
-  pub properties: Option<Map<String, String>>,
+  pub properties: Option<HashMap<String, String>>,
 }
 
 impl<T> WithGeometry<T> for Feature<T> {

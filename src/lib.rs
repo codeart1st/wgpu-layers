@@ -2,16 +2,12 @@ use geo_types::polygon;
 use log::info;
 
 mod bucket;
+mod parser;
 pub mod renderer;
 mod view;
 
-mod vector_tile {
-  include!(concat!(env!("OUT_DIR"), "/vector_tile.rs"));
-}
-
 #[cfg(target_arch = "wasm32")]
 mod wasm {
-  use prost::Message;
   use wasm_bindgen::prelude::*;
 
   pub use wasm_bindgen_rayon::init_thread_pool;
@@ -30,9 +26,10 @@ mod wasm {
     #[cfg(feature = "console_log")]
     console_log::init_with_level(log::Level::Info).expect("error initializing logger");
 
-    let tile = super::vector_tile::Tile::decode(&*vector_tile).expect("parsing error");
+    let parser = super::parser::Parser::new(vector_tile).expect("parse error");
 
-    log::info!("{:?}", tile);
+    log::info!("{:?}", parser.get_layer_names());
+    log::info!("{:?}", parser.get_features(2));
 
     Closure::wrap(
       Box::new(super::init(&canvas, (canvas.width(), canvas.height())).await)

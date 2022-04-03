@@ -31,7 +31,7 @@ export class OffscreenLayer extends Layer {
   }
 
   async getTestVectorTileArrayBuffer() {
-    const url = './polygon-with-inner.pbf'
+    const url = 'https://tegola-osm-demo.go-spatial.org/v1/maps/osm/7/66/42'
     const response = await fetch(url)
     return await response.arrayBuffer()
   }
