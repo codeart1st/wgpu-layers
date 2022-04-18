@@ -9,10 +9,27 @@ var<uniform> world: World;
 fn vs_main(
   @location(0) pos: vec2<f32>
 ) -> @builtin(position) vec4<f32> {
-  return vec4<f32>((world.view_matrix * vec3<f32>(pos, 1.0)), 1.0);
+  //  [4, 7, 7] (4) [-2504688.542848654, 0, 1.3969838619232178e-9, 2504688.5428486555]
+  var extent = array<f32,4>(-2504688.542848654, 0.0, 1.3969838619232178e-9, 2504688.5428486555);
+  var tile_size = 4096.0;
+  var tile_transform = mat3x3<f32>(
+    (extent[2] - extent[0]) / tile_size, 0.0, 0.0,
+    0.0, (extent[2] - extent[0]) / tile_size, 0.0,
+    extent[0], extent[1], 1.0
+  );
+  var flip_tile_transform = mat3x3<f32>(
+    1.0, 0.0, 0.0,
+    0.0, -1.0, 0.0,
+    0.0, tile_size, 1.0
+  );
+  var model_matrix = tile_transform * flip_tile_transform;
+  var model_view_matrix = world.view_matrix * model_matrix;
+
+  return vec4<f32>((model_view_matrix * vec3<f32>(pos, 1.0)), 1.0);
 }
 
 @stage(fragment)
 fn fs_main() -> @location(0) vec4<f32> {
-  return vec4<f32>(1.0, 0.0, 0.0, 1.0);
+  var alpha = 0.5;
+  return alpha * vec4<f32>(1.0, 0.0, 0.0, 1.0);
 }

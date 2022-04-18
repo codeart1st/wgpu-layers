@@ -42,7 +42,7 @@ async fn start(
   window: MapWindow,
   size: winit::dpi::PhysicalSize<u32>,
 ) {
-  let mut render = wgpu_layers::init(&window, (size.width, size.height)).await;
+  wgpu_layers::init(&window, (size.width, size.height)).await;
 
   #[rustfmt::skip]
   let view_matrix = vec![
@@ -51,7 +51,7 @@ async fn start(
     -0.27666306, -0.7963807, 1.0, 0.0,
     0.0, 0.0, 0.0, 1.0,
   ];
-  render(view_matrix, vec![size.width, size.height]);
+  wgpu_layers::render(view_matrix, vec![size.width, size.height]);
 
   info!("renderer init");
 

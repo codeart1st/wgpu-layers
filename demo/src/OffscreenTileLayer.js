@@ -1,8 +1,10 @@
-import { Layer } from 'ol/layer'
+import { Tile } from 'ol/layer'
 import { compose, create, toString as toTransformString } from 'ol/transform'
+import { getUid } from 'ol/util'
+import TileState from 'ol/TileState'
 import { READY, CANVAS, FRAME_STATE, RENDERED } from './types'
 
-export class OffscreenLayer extends Layer {
+export class OffscreenTileLayer extends Tile {
   // Transform the container to account for the differnece between the (newer)
   // main thread frameState and the (older) worker frameState
   updateContainerTransform() {
@@ -31,7 +33,7 @@ export class OffscreenLayer extends Layer {
   }
 
   async getTestVectorTileArrayBuffer() {
-    const url = 'https://tegola-osm-demo.go-spatial.org/v1/maps/osm/7/66/42'
+    const url = 'https://tegola-osm-demo.go-spatial.org/v1/maps/osm/1/1/1'
     const response = await fetch(url)
     return await response.arrayBuffer()
   }
@@ -109,6 +111,54 @@ export class OffscreenLayer extends Layer {
     }
   }
 
+  resize(frameState) {
+    const [width, height] = frameState.size
+    if (this.canvas.width != width || this.canvas.height != height) {
+      this.canvas.width = width
+      this.canvas.height = height
+      this.ctx.drawImage(this.offscreenCanvas, 0, 0)
+    }
+  }
+
+  loadTiles(frameState) {
+    const viewState = frameState.viewState
+    const projection = viewState.projection
+    const pixelRatio = frameState.pixelRatio
+    const viewResolution = viewState.resolution
+    const tileQueue = frameState.tileQueue
+
+    const tileSource = this.getSource()
+    const tileGrid = tileSource.getTileGridForProjection(projection)
+    const z = tileGrid.getZForResolution(viewResolution, tileSource.zDirection)
+
+    const tileRange = tileGrid.getTileRangeForExtentAndZ(frameState.extent, z)
+
+    const tileSourceKey = getUid(tileSource);
+    if (!(tileSourceKey in frameState.wantedTiles)) {
+      frameState.wantedTiles[tileSourceKey] = {}
+    }
+    const wantedTiles = frameState.wantedTiles[tileSourceKey]
+
+    const tileResolution = tileGrid.getResolution(z)
+
+    for (let x = tileRange.minX; x <= tileRange.maxX; ++x) {
+      for (let y = tileRange.minY; y <= tileRange.maxY; ++y) {
+        const tile = tileSource.getTile(z, x, y, pixelRatio, projection)
+        if (tile.getState() == TileState.IDLE) {
+          wantedTiles[tile.getKey()] = true
+          if (!tileQueue.isKeyQueued(tile.getKey())) {
+            tileQueue.enqueue([
+              tile,
+              tileSourceKey,
+              tileGrid.getTileCoordCenter(tile.tileCoord),
+              tileResolution,
+            ])
+          }
+        }
+      }
+    }
+  }
+
   render(frameState) {
     if (!this.container_) {
       this.container_ = this.createContainer()
@@ -117,12 +167,8 @@ export class OffscreenLayer extends Layer {
     this.mainThreadFrameState = frameState
     this.updateContainerTransform()
 
-    const [width, height] = frameState.size
-    if (this.canvas.width != width || this.canvas.height != height) {
-      this.canvas.width = width
-      this.canvas.height = height
-      this.ctx.drawImage(this.offscreenCanvas, 0, 0)
-    }
+    this.resize(frameState)
+    this.loadTiles(frameState)
 
     if (!this.rendering) {
       this.rendering = true
@@ -135,8 +181,7 @@ export class OffscreenLayer extends Layer {
               center: frameState.viewState.center,
               resolution: frameState.viewState.resolution,
               rotation: frameState.viewState.rotation
-            },
-            coordinateToPixelTransform: frameState.coordinateToPixelTransform
+            }
           }
         }
       })

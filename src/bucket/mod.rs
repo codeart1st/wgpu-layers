@@ -17,7 +17,10 @@ pub struct Bucket<'a, F> {
   pipeline: wgpu::RenderPipeline,
 
   /// map features
-  features: Vec<F>,
+  features: Vec<&'a F>,
+
+  /// tile extent
+  extent: [f32; 4],
 
   /// wgpu bind group
   bind_group: wgpu::BindGroup,
@@ -101,8 +104,8 @@ impl<'a, F> Bucket<'a, F> {
         entry_point: "fs_main",
         targets: &[wgpu::ColorTargetState {
           format: *texture_format,
-          blend: None,
-          write_mask: wgpu::ColorWrites::ALL,
+          blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
+          write_mask: wgpu::ColorWrites::default(),
         }],
       }),
       primitive: wgpu::PrimitiveState::default(),
@@ -115,6 +118,7 @@ impl<'a, F> Bucket<'a, F> {
       device,
       pipeline,
       features: Vec::new(),
+      extent: [0.0, 0.0, 0.0, 0.0],
       bind_group,
       vertex_wgpu_buffer: None,
       vertex_buffer: Vec::with_capacity(0),
@@ -133,11 +137,20 @@ impl<'a, F> Bucket<'a, F> {
         pass.set_pipeline(&self.pipeline);
         pass.set_bind_group(0, &self.bind_group, &[]);
 
-        queue.write_buffer(
-          &self.world_buffer,
-          0,
-          bytemuck::cast_slice(&view.view_matrix),
-        );
+        let mut view_matrix = view.view_matrix.clone();
+
+        // 78271.51599999842
+        //view_matrix[0] *= (self.extent[2] - self.extent[0]) / 4096.0;
+        //view_matrix[5] *= (self.extent[3] - self.extent[1]) / 4096.0;
+        // 0 4 8  12
+        // 1 5 9  13
+        // 2 6 10 14
+        // 3 7 11 15
+        // -20037508.0
+
+        //view_matrix[8] -= 0.5;
+
+        queue.write_buffer(&self.world_buffer, 0, bytemuck::cast_slice(&view_matrix));
 
         pass.set_vertex_buffer(0, vertex_buffer.slice(..));
         pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16);
@@ -149,46 +162,53 @@ impl<'a, F> Bucket<'a, F> {
     }
   }
 
-  pub fn add_features(&mut self, mut features: Vec<F>)
+  pub fn add_features(&mut self, features: &'a [F])
   where
-    F: feature::WithGeometry<geo_types::Geometry<f32>>,
+    F: feature::WithGeometry<geo_types::GeometryCollection<f32>>,
   {
     for feature in features.iter() {
-      let geometry = feature.get_geometry();
-      match geometry {
-        Polygon(polygon) => {
-          let exterior = polygon.exterior();
-          let interior = polygon.interiors();
-          let mut vertex_count = exterior.0.len();
-          let mut rings = Vec::with_capacity(1 + interior.len());
-          rings.push(exterior);
-          interior.iter().for_each(|r| {
-            rings.push(r);
-            vertex_count += r.0.len();
-          });
-          let mut vertices = Vec::with_capacity(vertex_count * DIMENSIONS);
-          let mut hole_indices = Vec::new();
-          for (i, ring) in rings.iter().enumerate() {
-            for coord in ring.coords() {
-              vertices.push(coord.x);
-              vertices.push(coord.y);
+      let geometry_collection = feature.get_geometry();
+      for geometry in geometry_collection.iter() {
+        match geometry {
+          Polygon(polygon) => {
+            let exterior = polygon.exterior();
+            let interior = polygon.interiors();
+            let mut vertex_count = exterior.0.len() - 1;
+            let mut rings = Vec::with_capacity(1 + interior.len());
+            rings.push(exterior);
+            interior.iter().for_each(|r| {
+              rings.push(r);
+              // ignore last coordinate (closed ring)
+              vertex_count += r.0.len() - 1;
+            });
+            let mut vertices = Vec::with_capacity(vertex_count * DIMENSIONS);
+            let mut hole_indices = Vec::new();
+            for (i, ring) in rings.iter().enumerate() {
+              // ignore last coordinate (closed ring)
+              let end = ring.0.len() - 1;
+              let coordinate_slice = &ring.0[..end];
+              for coord in coordinate_slice.iter() {
+                vertices.push(coord.x);
+                vertices.push(coord.y);
+              }
+              if i < rings.len() - 1 {
+                hole_indices.push(vertices.len())
+              }
             }
-            if i < rings.len() - 1 {
-              hole_indices.push(vertices.len())
-            }
+            let indices = earcutr::earcut(&vertices, &hole_indices, DIMENSIONS);
+            let offset = (self.vertex_buffer.len() / DIMENSIONS) as u16;
+            self.vertex_buffer.append(&mut vertices);
+            self
+              .index_buffer
+              .append(&mut indices.iter().map(|i| (*i as u16) + offset).collect());
           }
-          let indices = earcutr::earcut(&vertices, &hole_indices, DIMENSIONS);
-          self.vertex_buffer.append(&mut vertices);
-          self
-            .index_buffer
-            .append(&mut indices.iter().map(|i| *i as u16).collect());
-        }
-        _ => {
-          info!("Geometry type currently not supported");
+          _ => {
+            info!("Geometry type currently not supported");
+          }
         }
       }
     }
-    self.features.append(&mut features);
+    features.iter().for_each(|f| self.features.push(f));
 
     self.vertex_wgpu_buffer = Some(self.device.create_buffer_init(
       &wgpu::util::BufferInitDescriptor {
@@ -205,5 +225,9 @@ impl<'a, F> Bucket<'a, F> {
         usage: wgpu::BufferUsages::INDEX,
       },
     ));
+  }
+
+  pub fn set_extent(&mut self, extent: [f32; 4]) {
+    self.extent = extent;
   }
 }

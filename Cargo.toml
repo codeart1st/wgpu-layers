@@ -11,21 +11,21 @@ crate-type = ["cdylib", "rlib"]
 default = ["console_error_panic_hook", "console_log"]
 
 [dependencies]
-log = "0.4.14"
+log = "0.4.16"
 wgpu = { git = "https://github.com/gfx-rs/wgpu" }
-rayon = "1.5.1"
-geo-types = "0.7.3"
-bytemuck = "1.9.0"
+rayon = "1.5.2"
+geo-types = "0.7.4"
+bytemuck = "1.9.1"
 earcutr = "0.2.0"
-prost = { version = "0.10.0", default-features = false, features = ["prost-derive"] }
+prost = { version = "0.10.1", default-features = false, features = ["prost-derive"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-wasm-bindgen = "0.2.79"
-wasm-bindgen-futures = "0.4.29"
+wasm-bindgen = "0.2.80"
+wasm-bindgen-futures = "0.4.30"
 wasm-bindgen-rayon = "1.0.3"
 console_log = { version = "0.2.0", optional = true }
 console_error_panic_hook = { version = "0.1.7", optional = true }
-web-sys = { version = "0.3.56", features = [
+web-sys = { version = "0.3.57", features = [
   "OffscreenCanvas"
 ]}
 
@@ -35,7 +35,7 @@ env_logger = "0.9.0"
 winit = "0.26.1"
 
 [build-dependencies]
-prost-build = "0.10.0"
+prost-build = "0.10.1"
 
 [profile.release]
 opt-level = "s"

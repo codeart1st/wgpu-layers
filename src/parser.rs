@@ -1,5 +1,5 @@
-use geo_types::GeometryCollection;
-use log::warn;
+use geo_types::{Coordinate, GeometryCollection, LineString, Point, Polygon};
+use log::{info, warn};
 use prost::Message;
 
 use crate::bucket::feature::Feature;
@@ -43,10 +43,14 @@ impl Parser {
       Some(layer) => {
         let mut features = Vec::with_capacity(layer.features.len());
         for feature in layer.features.iter() {
-          features.push(Feature {
-            geometry: GeometryCollection::<f32>::new(),
-            properties: Some(parse_tags(&feature.tags, &layer.keys, &layer.values)),
-          });
+          if let Some(geom_type) = feature.r#type {
+            if let Some(geom_type) = vector_tile::tile::GeomType::from_i32(geom_type) {
+              features.push(Feature {
+                geometry: parse_geometry(&feature.geometry, geom_type),
+                properties: Some(parse_tags(&feature.tags, &layer.keys, &layer.values)),
+              });
+            }
+          }
         }
         Some(features)
       }
@@ -94,4 +98,100 @@ fn get_string_value(value: vector_tile::tile::Value) -> String {
     return value.bool_value.unwrap().to_string();
   }
   String::new()
+}
+
+fn shoelace_formula(points: &[Point<f32>]) -> f32 {
+  let mut area: f32 = 0.0;
+  let n = points.len();
+  let mut v1 = points[n - 1];
+  for i in 0..n {
+    let v2 = points[i];
+    area += (v2.y() as f32 - v1.y() as f32) * (v2.x() + v1.x()) as f32;
+    v1 = v2;
+  }
+  area * 0.5
+}
+
+fn parse_geometry(
+  geometry_data: &[u32],
+  geom_type: vector_tile::tile::GeomType,
+) -> GeometryCollection<f32> {
+  // worst case capacity to prevent reallocation. not needed to be exact.
+  let mut coordinates = Vec::with_capacity(geometry_data.len());
+  let mut rings: Vec<LineString<f32>> = Vec::new();
+  let mut geometries = Vec::new();
+
+  let mut cursor = [0, 0];
+  let mut parameter_count: u32 = 0;
+  let mut id: u8 = 0;
+
+  for (_, value) in geometry_data.iter().enumerate() {
+    if parameter_count == 0 {
+      let command_integer = value;
+      id = (command_integer & 0x7) as u8;
+      match id {
+        1 | 2 => {
+          // MoveTo | LineTo
+          parameter_count = (command_integer >> 3) * 2; // 2-dimensional
+        }
+        7 => {
+          // ClosePath
+          coordinates.push(*coordinates.first().expect("invalid geometry"));
+
+          let ring = LineString(coordinates);
+
+          let area = shoelace_formula(&ring.clone().into_points());
+          //info!("ClosePath with area: {} and coordinates {:?}", area, &ring);
+
+          if area > 0.0 {
+            // exterior ring
+            //info!("exterior");
+            if !rings.is_empty() {
+              // finish previous geometry
+              geometries.push(Polygon::new(rings[0].clone(), rings[1..].into()).into());
+              rings = Vec::new();
+            }
+          } else {
+            // interior ring
+            //info!("interior");
+          }
+          rings.push(ring);
+          // start a new sequence
+          coordinates = Vec::new();
+        }
+        _ => (),
+      }
+    } else {
+      let parameter_integer = value;
+      let integer_value = ((parameter_integer >> 1) as i32) ^ -((parameter_integer & 1) as i32);
+      if parameter_count % 2 == 0 {
+        cursor[0] = cursor[0] as i32 + integer_value;
+      } else {
+        cursor[1] = cursor[1] as i32 + integer_value;
+        /*match geom_type {
+          vector_tile::tile::GeomType::Polygon => {
+            info!("Polygon {} {}", cursor[0], cursor[1]);
+          }
+          vector_tile::tile::GeomType::Point => {
+            info!("Point");
+          }
+          vector_tile::tile::GeomType::Linestring => {
+            info!("Linestring");
+          }
+          _ => (),
+        }*/
+        coordinates.push(Coordinate {
+          x: cursor[0] as f32,
+          y: cursor[1] as f32,
+        });
+      }
+      parameter_count -= 1;
+    }
+  }
+
+  if !rings.is_empty() {
+    // finish last geometry
+    geometries.push(Polygon::new(rings[0].clone(), rings[1..].into()).into());
+  }
+  GeometryCollection(geometries)
 }

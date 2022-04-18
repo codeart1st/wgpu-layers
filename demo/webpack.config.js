@@ -15,13 +15,15 @@ module.exports = {
     })
   ],
   watchOptions: {
-    poll: 3000
+    poll: 1000,
+    aggregateTimeout: 1000
   },
   devServer: {
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',
       'Cross-Origin-Embedder-Policy': 'require-corp'
-    }
+    },
+    hot: false
   },
   ignoreWarnings: [
     /Circular dependency between chunks with runtime/

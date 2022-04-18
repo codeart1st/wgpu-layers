@@ -112,23 +112,25 @@ impl Renderer {
       .texture
       .create_view(&wgpu::TextureViewDescriptor::default());
 
-    command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-      label: None,
-      color_attachments: &[wgpu::RenderPassColorAttachment {
-        view: &view,
-        resolve_target: None,
-        ops: wgpu::Operations {
-          load: wgpu::LoadOp::Clear(wgpu::Color {
-            r: 0.0,
-            g: 0.0,
-            b: 0.0,
-            a: 0.0,
-          }),
-          store: true,
-        },
-      }],
-      depth_stencil_attachment: None,
-    });
+    {
+      command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        label: None,
+        color_attachments: &[wgpu::RenderPassColorAttachment {
+          view: &view,
+          resolve_target: None,
+          ops: wgpu::Operations {
+            load: wgpu::LoadOp::Clear(wgpu::Color {
+              r: 0.0,
+              g: 0.0,
+              b: 0.0,
+              a: 0.0,
+            }),
+            store: true,
+          },
+        }],
+        depth_stencil_attachment: None,
+      });
+    } // out of scope
 
     for bucket in buckets.iter() {
       let mut pass = command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
