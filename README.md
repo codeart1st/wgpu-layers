@@ -1,10 +1,7 @@
 # Browser support
 
 Chrome Development with enable-unsafe-webgpu working.
-
-Firefox dom.webgpu.enabled and gfx.offscreencanvas.enabled but still missing interop:
-* https://bugzilla.mozilla.org/show_bug.cgi?id=1753302
-* https://bugzilla.mozilla.org/show_bug.cgi?id=1698612
+Firefox dom.webgpu.enabled and gfx.offscreencanvas.enabled. Missing compositingAlphaMode support.
 
 # Build the project
 

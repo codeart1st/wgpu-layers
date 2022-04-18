@@ -29,8 +29,29 @@ fn vs_main(
   return vec4<f32>((model_view_matrix * vec3<f32>(pos, 1.0)), 1.0);
 }
 
+struct FragmentOutput {
+  @location(0) color: vec4<f32>,
+  @builtin(sample_mask) mask_out: u32
+}
+
 @stage(fragment)
-fn fs_main() -> @location(0) vec4<f32> {
+fn fs_main(@builtin(position) position: vec4<f32>) -> FragmentOutput {
   var alpha = 0.5;
-  return alpha * vec4<f32>(1.0, 0.0, 0.0, 1.0);
+  var extent = vec4<f32>(512.0, 512.0, 1024.0, 1024.0);
+
+  var out: FragmentOutput;
+  out.color = alpha * vec4<f32>(1.0, 0.0, 0.0, 1.0);
+
+  // vector tile buffer clipping
+  if (
+    position.x < extent[0] ||
+    position.x > extent[2] ||
+    position.y < extent[1] ||
+    position.y > extent[3]
+  ) {
+    out.mask_out = 0u;
+  } else {
+    out.mask_out = 0xFFFFFFFFu;
+  }
+  return out;
 }
