@@ -1,7 +1,7 @@
 import init, { initThreadPool, start, render, addPbfTileData } from 'wgpu-layers'
 import { create, makeInverse } from 'ol/transform'
 
-import { READY, CANVAS, FRAME_STATE, RENDERED, PBF_DATA } from './types'
+import { READY, STARTED, CANVAS, FRAME_STATE, RENDERED, PBF_DATA } from './types'
 
 let canvas, ready = false
 
@@ -12,7 +12,8 @@ self.onmessage = async ({ data: { type, payload } }) => {
   switch (type) {
     case CANVAS:
       canvas = payload.canvas
-      await start(canvas, new Uint8Array(payload.data))
+      await start(canvas)
+      self.postMessage({ type: STARTED })
       ready = true
       break
     case FRAME_STATE:

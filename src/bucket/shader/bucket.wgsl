@@ -1,16 +1,17 @@
 struct World {
-  view_matrix: mat3x3<f32>
+  view_matrix: mat3x3<f32>,
 };
 
 @group(0) @binding(0)
 var<uniform> world: World;
 
+@group(0) @binding(1)
+var<uniform> extent: vec4<f32>;
+
 @stage(vertex)
 fn vs_main(
   @location(0) pos: vec2<f32>
 ) -> @builtin(position) vec4<f32> {
-  //  [4, 7, 7] (4) [-2504688.542848654, 0, 1.3969838619232178e-9, 2504688.5428486555]
-  var extent = array<f32,4>(-2504688.542848654, 0.0, 1.3969838619232178e-9, 2504688.5428486555);
   var tile_size = 4096.0;
   var tile_transform = mat3x3<f32>(
     (extent[2] - extent[0]) / tile_size, 0.0, 0.0,

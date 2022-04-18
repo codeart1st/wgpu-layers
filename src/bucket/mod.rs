@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use geo_types::Geometry::*;
 use log::info;
 use wgpu::util::DeviceExt;
@@ -9,18 +11,18 @@ pub mod feature;
 const DIMENSIONS: usize = 2;
 
 #[derive(Debug)]
-pub struct Bucket<'a, F> {
+pub struct Bucket<F> {
   /// wgpu device
-  device: &'a wgpu::Device,
+  device: Rc<wgpu::Device>,
 
   /// wgpu pipeline
   pipeline: wgpu::RenderPipeline,
 
   /// map features
-  features: Vec<&'a F>,
+  features: Vec<F>,
 
   /// tile extent
-  extent: [f32; 4],
+  extent: Vec<f32>,
 
   /// wgpu bind group
   bind_group: wgpu::BindGroup,
@@ -37,10 +39,13 @@ pub struct Bucket<'a, F> {
 
   /// world buffer
   world_buffer: wgpu::Buffer,
+
+  /// extent buffer
+  extent_buffer: wgpu::Buffer,
 }
 
-impl<'a, F> Bucket<'a, F> {
-  pub fn new(device: &'a wgpu::Device, texture_format: &wgpu::TextureFormat, view: &View) -> Self {
+impl<F> Bucket<F> {
+  pub fn new(device: Rc<wgpu::Device>, texture_format: &wgpu::TextureFormat, view: &View) -> Self {
     let shader_module = device.create_shader_module(&wgpu::ShaderModuleDescriptor {
       label: None,
       source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!(
@@ -50,16 +55,28 @@ impl<'a, F> Bucket<'a, F> {
 
     let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
       label: None,
-      entries: &[wgpu::BindGroupLayoutEntry {
-        binding: 0,
-        visibility: wgpu::ShaderStages::VERTEX,
-        ty: wgpu::BindingType::Buffer {
-          ty: wgpu::BufferBindingType::Uniform,
-          has_dynamic_offset: false,
-          min_binding_size: None,
+      entries: &[
+        wgpu::BindGroupLayoutEntry {
+          binding: 0,
+          visibility: wgpu::ShaderStages::VERTEX,
+          ty: wgpu::BindingType::Buffer {
+            ty: wgpu::BufferBindingType::Uniform,
+            has_dynamic_offset: false,
+            min_binding_size: None,
+          },
+          count: None,
         },
-        count: None,
-      }],
+        wgpu::BindGroupLayoutEntry {
+          binding: 1,
+          visibility: wgpu::ShaderStages::VERTEX,
+          ty: wgpu::BindingType::Buffer {
+            ty: wgpu::BufferBindingType::Uniform,
+            has_dynamic_offset: false,
+            min_binding_size: None,
+          },
+          count: None,
+        },
+      ],
     });
 
     let world_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -68,13 +85,25 @@ impl<'a, F> Bucket<'a, F> {
       usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
     });
 
+    let extent_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+      label: None,
+      contents: bytemuck::cast_slice(&[0.0f32, 0.0f32, 0.0f32, 0.0f32]),
+      usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+    });
+
     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
       label: None,
       layout: &bind_group_layout,
-      entries: &[wgpu::BindGroupEntry {
-        binding: 0,
-        resource: world_buffer.as_entire_binding(),
-      }],
+      entries: &[
+        wgpu::BindGroupEntry {
+          binding: 0,
+          resource: world_buffer.as_entire_binding(),
+        },
+        wgpu::BindGroupEntry {
+          binding: 1,
+          resource: extent_buffer.as_entire_binding(),
+        },
+      ],
     });
 
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -118,13 +147,14 @@ impl<'a, F> Bucket<'a, F> {
       device,
       pipeline,
       features: Vec::new(),
-      extent: [0.0, 0.0, 0.0, 0.0],
+      extent: vec![0.0, 0.0, 0.0, 0.0],
       bind_group,
       vertex_wgpu_buffer: None,
       vertex_buffer: Vec::with_capacity(0),
       index_wgpu_buffer: None,
       index_buffer: Vec::with_capacity(0),
       world_buffer,
+      extent_buffer,
     }
   }
 
@@ -137,20 +167,12 @@ impl<'a, F> Bucket<'a, F> {
         pass.set_pipeline(&self.pipeline);
         pass.set_bind_group(0, &self.bind_group, &[]);
 
-        let mut view_matrix = view.view_matrix.clone();
-
-        // 78271.51599999842
-        //view_matrix[0] *= (self.extent[2] - self.extent[0]) / 4096.0;
-        //view_matrix[5] *= (self.extent[3] - self.extent[1]) / 4096.0;
-        // 0 4 8  12
-        // 1 5 9  13
-        // 2 6 10 14
-        // 3 7 11 15
-        // -20037508.0
-
-        //view_matrix[8] -= 0.5;
-
-        queue.write_buffer(&self.world_buffer, 0, bytemuck::cast_slice(&view_matrix));
+        queue.write_buffer(
+          &self.world_buffer,
+          0,
+          bytemuck::cast_slice(&view.view_matrix),
+        );
+        queue.write_buffer(&self.extent_buffer, 0, bytemuck::cast_slice(&self.extent));
 
         pass.set_vertex_buffer(0, vertex_buffer.slice(..));
         pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16);
@@ -162,7 +184,7 @@ impl<'a, F> Bucket<'a, F> {
     }
   }
 
-  pub fn add_features(&mut self, features: &'a [F])
+  pub fn add_features(&mut self, features: &mut Vec<F>)
   where
     F: feature::WithGeometry<geo_types::GeometryCollection<f32>>,
   {
@@ -208,7 +230,7 @@ impl<'a, F> Bucket<'a, F> {
         }
       }
     }
-    features.iter().for_each(|f| self.features.push(f));
+    self.features.append(features);
 
     self.vertex_wgpu_buffer = Some(self.device.create_buffer_init(
       &wgpu::util::BufferInitDescriptor {
@@ -227,7 +249,7 @@ impl<'a, F> Bucket<'a, F> {
     ));
   }
 
-  pub fn set_extent(&mut self, extent: [f32; 4]) {
+  pub fn set_extent(&mut self, extent: Vec<f32>) {
     self.extent = extent;
   }
 }

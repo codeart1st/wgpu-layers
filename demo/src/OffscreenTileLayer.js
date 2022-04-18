@@ -2,9 +2,14 @@ import { Tile } from 'ol/layer'
 import { compose, create, toString as toTransformString } from 'ol/transform'
 import { getUid } from 'ol/util'
 import TileState from 'ol/TileState'
-import { READY, CANVAS, FRAME_STATE, RENDERED } from './types'
+import { READY, STARTED, CANVAS, FRAME_STATE, RENDERED, PBF_DATA } from './types'
 
 export class OffscreenTileLayer extends Tile {
+  constructor(opt_options) {
+    super(opt_options)
+    this.queue = []
+  }
+
   // Transform the container to account for the differnece between the (newer)
   // main thread frameState and the (older) worker frameState
   updateContainerTransform() {
@@ -30,12 +35,6 @@ export class OffscreenTileLayer extends Tile {
       )
       this.transformContainer.style.transform = toTransformString(transform)
     }
-  }
-
-  async getTestVectorTileArrayBuffer() {
-    const url = 'https://tegola-osm-demo.go-spatial.org/v1/maps/osm/1/1/1'
-    const response = await fetch(url)
-    return await response.arrayBuffer()
   }
 
   createContainer() {
@@ -80,14 +79,16 @@ export class OffscreenTileLayer extends Tile {
           canvas.width = offscreenCanvas.clientWidth
           canvas.height = offscreenCanvas.clientHeight
 
-          const vectorTile = await this.getTestVectorTileArrayBuffer()
-
           this.worker.postMessage({
             type: CANVAS, payload: {
-              canvas: offscreen,
-              data: vectorTile
+              canvas: offscreen
             }
-          }, [offscreen, vectorTile])
+          }, [offscreen])
+          break
+        case STARTED:
+          this.ready = true
+          this.queue.forEach(task => task())
+          this.queue = []
           break
         case RENDERED:
           requestAnimationFrame(() => {
@@ -109,6 +110,31 @@ export class OffscreenTileLayer extends Tile {
     return {
       ready: true
     }
+  }
+
+  async pushPbfTileData(pbf, tileCoord, extent) {
+    const message = {
+      type: PBF_DATA,
+      payload: {
+        data: pbf,
+        tileCoord,
+        extent
+      }
+    }
+    if (this.ready) {
+      this.worker.postMessage(message, [pbf])
+      return Promise.resolve()
+    }
+    return new Promise((resolve, reject) => {
+      try {
+        this.queue.push(() => {
+          this.worker.postMessage(message, [pbf])
+          resolve()
+        })
+      } catch (e) {
+        reject(e)
+      }
+    })
   }
 
   resize(frameState) {

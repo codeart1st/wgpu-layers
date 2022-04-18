@@ -1,5 +1,5 @@
 use geo_types::{Coordinate, GeometryCollection, LineString, Point, Polygon};
-use log::{info, warn};
+use log::warn;
 use prost::Message;
 
 use crate::bucket::feature::Feature;

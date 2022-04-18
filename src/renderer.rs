@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, rc::Rc};
 
 use log::info;
 
@@ -6,7 +6,7 @@ use crate::{bucket::Bucket, view::View};
 
 pub struct Renderer {
   /// wgpu device
-  pub device: wgpu::Device,
+  pub device: Rc<wgpu::Device>,
 
   /// preferred texutre format of surface
   pub texture_format: wgpu::TextureFormat,
@@ -79,7 +79,7 @@ impl Renderer {
     surface.configure(&device, &surface_config);
 
     Self {
-      device,
+      device: Rc::new(device),
       texture_format,
       view: View::new((width, height)),
       surface,
@@ -89,7 +89,7 @@ impl Renderer {
   }
 
   pub fn create_bucket<T>(&self) -> Bucket<T> {
-    Bucket::new(&self.device, &self.texture_format, &self.view)
+    Bucket::new(self.device.to_owned(), &self.texture_format, &self.view)
   }
 
   pub fn set_size(&mut self, (width, height): (u32, u32)) {
@@ -98,7 +98,7 @@ impl Renderer {
     self.surface.configure(&self.device, &self.surface_config);
   }
 
-  pub fn render<T: Debug>(&self, buckets: Vec<Bucket<T>>) {
+  pub fn render<T: Debug>(&self, buckets: &[Bucket<T>]) {
     let mut command_encoder = self
       .device
       .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
