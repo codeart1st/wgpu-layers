@@ -2,7 +2,7 @@
   "name": "wgpu-layers-demo",
   "version": "0.1.0",
   "author": "Paul Lange <paul.lange@data-experts.de>",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "scripts": {
     "build": "webpack --config webpack.config.js",
     "start": "webpack-dev-server"
