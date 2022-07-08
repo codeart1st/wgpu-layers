@@ -8,7 +8,7 @@ var<uniform> world: World;
 @group(0) @binding(1)
 var<uniform> extent: vec4<f32>;
 
-@stage(vertex)
+@vertex
 fn vs_main(
   @location(0) pos: vec2<f32>
 ) -> @builtin(position) vec4<f32> {
@@ -34,7 +34,7 @@ struct FragmentOutput {
   @builtin(sample_mask) mask_out: u32
 }
 
-@stage(fragment)
+@fragment
 fn fs_main(@builtin(position) position: vec4<f32>) -> FragmentOutput {
   var alpha = 0.5;
   var extent = vec4<f32>(512.0, 512.0, 1024.0, 1024.0);

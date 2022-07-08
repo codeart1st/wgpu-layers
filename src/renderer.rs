@@ -65,8 +65,10 @@ impl Renderer {
     info!("device: {:?}", device);
 
     let texture_format = surface
-      .get_preferred_format(&adapter)
-      .expect("Can't get texture format for surface.");
+      .get_supported_formats(&adapter)
+      .first()
+      .expect("Can't get texture format for surface.")
+      .to_owned();
 
     let surface_config = wgpu::SurfaceConfiguration {
       usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -115,7 +117,7 @@ impl Renderer {
     {
       command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
         label: None,
-        color_attachments: &[wgpu::RenderPassColorAttachment {
+        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
           view: &view,
           resolve_target: None,
           ops: wgpu::Operations {
@@ -127,7 +129,7 @@ impl Renderer {
             }),
             store: true,
           },
-        }],
+        })],
         depth_stencil_attachment: None,
       });
     } // out of scope
@@ -135,14 +137,14 @@ impl Renderer {
     for bucket in buckets.iter() {
       let mut pass = command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
         label: None,
-        color_attachments: &[wgpu::RenderPassColorAttachment {
+        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
           view: &view,
           resolve_target: None,
           ops: wgpu::Operations {
             load: wgpu::LoadOp::Load,
             store: true,
           },
-        }],
+        })],
         depth_stencil_attachment: None,
       });
 

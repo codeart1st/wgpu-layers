@@ -46,7 +46,7 @@ pub struct Bucket<F> {
 
 impl<F> Bucket<F> {
   pub fn new(device: Rc<wgpu::Device>, texture_format: &wgpu::TextureFormat, view: &View) -> Self {
-    let shader_module = device.create_shader_module(&wgpu::ShaderModuleDescriptor {
+    let shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
       label: None,
       source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!(
         "shader/bucket.wgsl"
@@ -131,11 +131,11 @@ impl<F> Bucket<F> {
       fragment: Some(wgpu::FragmentState {
         module: &shader_module,
         entry_point: "fs_main",
-        targets: &[wgpu::ColorTargetState {
+        targets: &[Some(wgpu::ColorTargetState {
           format: *texture_format,
           blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
           write_mask: wgpu::ColorWrites::default(),
-        }],
+        })],
       }),
       primitive: wgpu::PrimitiveState::default(),
       multisample: wgpu::MultisampleState::default(),
