@@ -48,9 +48,7 @@ export class OffscreenTileLayer extends Tile {
         case STARTED:
           this.queue.forEach(task => task())
           this.queue = []
-          setTimeout(() => {
-            this.ready = true
-          }, 200);
+          this.ready = true
           break
       }
     }
@@ -102,7 +100,7 @@ export class OffscreenTileLayer extends Tile {
 
     const tileRange = tileGrid.getTileRangeForExtentAndZ(frameState.extent, z)
 
-    const tileSourceKey = getUid(tileSource);
+    const tileSourceKey = getUid(tileSource)
     if (!(tileSourceKey in frameState.wantedTiles)) {
       frameState.wantedTiles[tileSourceKey] = {}
     }

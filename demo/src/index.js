@@ -1,12 +1,16 @@
 import { Map, View } from 'ol'
 import { Tile } from 'ol/layer'
+import { createXYZ } from 'ol/tilegrid'
 import { OSM, TileDebug, VectorTile } from 'ol/source'
 
 import { OffscreenTileLayer } from './OffscreenTileLayer'
 
 function start() {
   const offscreenTileLayer = new OffscreenTileLayer()
+  const tileGrid = createXYZ({ maxZoom: 22 })
   const vectorTileSource = new VectorTile({
+    tileGrid,
+    zDirection: 0, // same as TileDebug
     tileLoadFunction: async (tile, src) => {
       const { tileCoord, extent } = tile
       const response = await fetch(src)
@@ -16,6 +20,9 @@ function start() {
     },
     url: 'https://tegola-osm-demo.go-spatial.org/v1/maps/osm/{z}/{x}/{y}'
   })
+  vectorTileSource.getTileGridForProjection = () => { // override for better debug purposes
+    return tileGrid
+  }
   offscreenTileLayer.setSource(vectorTileSource)
   new Map({
     target: 'map',
@@ -26,7 +33,7 @@ function start() {
       offscreenTileLayer,
       new Tile({
         source: new TileDebug({
-          tileGrid: vectorTileSource.tileGrid
+          tileGrid
         })
       })
     ],
