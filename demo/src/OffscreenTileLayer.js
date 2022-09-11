@@ -1,40 +1,13 @@
 import { Tile } from 'ol/layer'
-import { compose, create, toString as toTransformString } from 'ol/transform'
 import { getUid } from 'ol/util'
 import TileState from 'ol/TileState'
-import { READY, STARTED, CANVAS, FRAME_STATE, RENDERED, PBF_DATA } from './types'
+import { READY, STARTED, CANVAS, SHARED_ARRAY_BUFFER, PBF_DATA } from './types'
 
 export class OffscreenTileLayer extends Tile {
   constructor(opt_options) {
     super(opt_options)
     this.queue = []
-  }
-
-  // Transform the container to account for the differnece between the (newer)
-  // main thread frameState and the (older) worker frameState
-  updateContainerTransform() {
-    if (this.workerFrameState) {
-      const viewState = this.mainThreadFrameState.viewState
-      const renderedViewState = this.workerFrameState.viewState
-      const center = viewState.center
-      const resolution = viewState.resolution
-      const rotation = viewState.rotation
-      const renderedCenter = renderedViewState.center
-      const renderedResolution = renderedViewState.resolution
-      const renderedRotation = renderedViewState.rotation
-      const transform = create()
-      compose(
-        transform,
-        (renderedCenter[0] - center[0]) / resolution,
-        (center[1] - renderedCenter[1]) / resolution,
-        renderedResolution / resolution,
-        renderedResolution / resolution,
-        rotation - renderedRotation,
-        0,
-        0
-      )
-      this.transformContainer.style.transform = toTransformString(transform)
-    }
+    this.shared_state = new SharedArrayBuffer(7 * Uint32Array.BYTES_PER_ELEMENT)
   }
 
   createContainer() {
@@ -42,42 +15,29 @@ export class OffscreenTileLayer extends Tile {
     container.style.position = 'absolute'
     container.style.width = '100%'
     container.style.height = '100%'
-    this.transformContainer = document.createElement('div')
-    this.transformContainer.style.position = 'absolute'
-    this.transformContainer.style.width = '100%'
-    this.transformContainer.style.height = '100%'
     const offscreenCanvas = document.createElement('canvas')
     offscreenCanvas.style.display = 'block'
     offscreenCanvas.style.position = 'absolute'
-    offscreenCanvas.style.visibility = 'hidden'
     offscreenCanvas.style.width = '100%'
     offscreenCanvas.style.height = '100%'
-    const canvas = document.createElement('canvas')
-    canvas.style.display = 'block'
-    canvas.style.position = 'absolute'
-    canvas.style.width = '100%'
-    canvas.style.height = '100%'
-    container.appendChild(this.transformContainer)
     container.appendChild(offscreenCanvas)
-    this.transformContainer.appendChild(canvas)
 
-    const ctx = canvas.getContext('2d')
-
-    this.canvas = canvas
     this.offscreenCanvas = offscreenCanvas
-    this.ctx = ctx
 
     this.worker = new Worker(new URL('./worker', import.meta.url))
-    this.worker.onmessage = async ({ data: { type, payload } }) => {
+
+    this.worker.postMessage({
+      type: SHARED_ARRAY_BUFFER,
+      payload: this.shared_state
+    })
+
+    this.worker.onmessage = async ({ data: { type } }) => {
       switch (type) {
         case READY:
           const offscreen = offscreenCanvas.transferControlToOffscreen()
 
           offscreen.width = offscreenCanvas.clientWidth
           offscreen.height = offscreenCanvas.clientHeight
-
-          canvas.width = offscreenCanvas.clientWidth
-          canvas.height = offscreenCanvas.clientHeight
 
           this.worker.postMessage({
             type: CANVAS, payload: {
@@ -86,19 +46,11 @@ export class OffscreenTileLayer extends Tile {
           }, [offscreen])
           break
         case STARTED:
-          this.ready = true
           this.queue.forEach(task => task())
           this.queue = []
-          break
-        case RENDERED:
-          requestAnimationFrame(() => {
-            ctx.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height)
-            ctx.drawImage(offscreenCanvas, 0, 0)
-
-            this.workerFrameState = payload.frameState
-            this.updateContainerTransform()
-            this.rendering = false
-          })
+          setTimeout(() => {
+            this.ready = true
+          }, 200);
           break
       }
     }
@@ -135,15 +87,6 @@ export class OffscreenTileLayer extends Tile {
         reject(e)
       }
     })
-  }
-
-  resize(frameState) {
-    const [width, height] = frameState.size
-    if (this.canvas.width != width || this.canvas.height != height) {
-      this.canvas.width = width
-      this.canvas.height = height
-      this.ctx.drawImage(this.offscreenCanvas, 0, 0)
-    }
   }
 
   loadTiles(frameState) {
@@ -185,35 +128,37 @@ export class OffscreenTileLayer extends Tile {
     }
   }
 
+  setFrameState({ size, viewState: { center, resolution, rotation } }) {
+    const slice = new Uint32Array(this.shared_state)
+
+    const buffer = new ArrayBuffer(this.shared_state.byteLength)
+    const f32_buffer = new Float32Array(buffer)
+    const uint32_buffer = new Uint32Array(buffer)
+
+    uint32_buffer[0] = size[0]
+    uint32_buffer[1] = size[1]
+
+    f32_buffer[2] = center[0]
+    f32_buffer[3] = center[1]
+    f32_buffer[4] = resolution
+    f32_buffer[5] = rotation
+
+    for (let i = 0; i < uint32_buffer.length; i++) {
+      Atomics.store(slice, i, uint32_buffer[i])
+    }
+
+    Atomics.notify(new Int32Array(this.shared_state), 6, 1)
+  }
+
   render(frameState) {
     if (!this.container_) {
       this.container_ = this.createContainer()
     }
 
-    this.mainThreadFrameState = frameState
-    this.updateContainerTransform()
-
-    this.resize(frameState)
     this.loadTiles(frameState)
+    this.setFrameState(frameState)
 
-    if (!this.rendering) {
-      this.rendering = true
-      this.worker.postMessage({
-        type: FRAME_STATE,
-        payload: {
-          frameState: {
-            size: frameState.size,
-            viewState: {
-              center: frameState.viewState.center,
-              resolution: frameState.viewState.resolution,
-              rotation: frameState.viewState.rotation
-            }
-          }
-        }
-      })
-    } else {
-      frameState.animate = true
-    }
+    frameState.animate = !this.ready // TODO: track pbf data fully loaded
     return this.container_
   }
 }

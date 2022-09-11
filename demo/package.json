@@ -8,13 +8,13 @@
     "start": "webpack-dev-server"
   },
   "dependencies": {
-    "ol": "6.14.1",
+    "ol": "7.1.0",
     "wgpu-layers": "file:../pkg"
   },
   "devDependencies": {
     "copy-webpack-plugin": "11.0.0",
-    "webpack": "5.73.0",
+    "webpack": "5.74.0",
     "webpack-cli": "4.10.0",
-    "webpack-dev-server": "4.9.3"
+    "webpack-dev-server": "4.11.0"
   }
 }

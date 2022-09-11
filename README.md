@@ -6,7 +6,7 @@ Firefox dom.webgpu.enabled and gfx.offscreencanvas.enabled. Missing compositingA
 # Build the project
 
 ```sh
-wasm-pack build --target web --dev
+wasm-pack build --target web
 ```
 
 # Run a native example

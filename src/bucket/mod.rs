@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{convert::TryInto, rc::Rc};
 
 use geo_types::Geometry::*;
 use log::info;
@@ -9,6 +9,24 @@ use crate::view::View;
 pub mod feature;
 
 const DIMENSIONS: usize = 2;
+
+const TILE_SIZE: f32 = 4096.0;
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck_derive::Pod, bytemuck_derive::Zeroable)]
+pub struct Transforms {
+  /// inverse view matrix
+  view_matrix: [[f32; 4]; 4],
+
+  /// model matrix
+  model_matrix: [[f32; 4]; 4],
+
+  /// inverse view matrix multiplied by model matrix
+  model_view_matrix: [[f32; 4]; 4],
+
+  /// tile clipping rect
+  clipping_rect: [f32; 4],
+}
 
 #[derive(Debug)]
 pub struct Bucket<F> {
@@ -22,7 +40,7 @@ pub struct Bucket<F> {
   features: Vec<F>,
 
   /// tile extent
-  extent: Vec<f32>,
+  extent: [f32; 4],
 
   /// wgpu bind group
   bind_group: wgpu::BindGroup,
@@ -37,11 +55,80 @@ pub struct Bucket<F> {
 
   index_buffer: Vec<u16>,
 
-  /// world buffer
-  world_buffer: wgpu::Buffer,
+  /// transforms buffer
+  transforms_buffer: wgpu::Buffer,
 
   /// extent buffer
   extent_buffer: wgpu::Buffer,
+}
+
+/// tile_transform * flip_tile_transform because of Y-axis swap
+#[rustfmt::skip]
+fn get_model_matrix(extent: [f32; 4], tile_size: f32) -> [[f32; 4]; 4] {
+  let tile_transform = [ // column-major order
+    [(extent[2] - extent[0]) / tile_size, 0.0, 0.0, 0.0], // a11 a21 a31 a41
+    [0.0, (extent[2] - extent[0]) / tile_size, 0.0, 0.0], // a12 a22 a32 a42
+    [0.0, 0.0, 1.0, 0.0                                ], // a13 a23 a33 a43
+    [extent[0], extent[1], 0.0, 1.0                    ], // a14 a24 a34 a44
+  ];
+  let flip_tile_transform = [
+    [1.0, 0.0, 0.0, 0.0],
+    [0.0, -1.0, 0.0, 0.0],
+    [0.0, 0.0, 1.0, 0.0],
+    [0.0, tile_size, 0.0, 1.0],
+  ];
+  mat4x4_mul(&tile_transform, &flip_tile_transform)
+}
+
+fn mat4x4_mul(a: &[[f32; 4]; 4], b: &[[f32; 4]; 4]) -> [[f32; 4]; 4] {
+  let mut c = [[0.0; 4]; 4];
+
+  for i in 0..4 {
+    for j in 0..4 {
+      for k in 0..4 {
+        c[i][j] += a[k][j] * b[i][k];
+      }
+    }
+  }
+  c
+}
+
+fn mat4x4_mul_vec4(a: &[[f32; 4]; 4], b: &[f32; 4]) -> [f32; 4] {
+  let mut result = [0.0; 4];
+  for i in 0..4 {
+    for j in 0..4 {
+      result[i] += b[j] * a[j][i];
+    }
+  }
+  result
+}
+
+fn get_transforms(
+  view_matrix: [[f32; 4]; 4],
+  extent: [f32; 4],
+  half_width: f32,
+  half_height: f32,
+) -> [Transforms; 1] {
+  let model_matrix = get_model_matrix(extent, TILE_SIZE);
+  let model_view_matrix = mat4x4_mul(&view_matrix, &model_matrix);
+
+  let min_extent = mat4x4_mul_vec4(&model_view_matrix, &[0.0, 0.0, 0.0, 1.0]);
+  let max_extent = mat4x4_mul_vec4(&model_view_matrix, &[TILE_SIZE, TILE_SIZE, 0.0, 1.0]);
+
+  // convert from view to screen coordinates (pixels)
+  let clipping_rect = [
+    (min_extent[0] + 1.0) * half_width,
+    (-min_extent[1] + 1.0) * half_height,
+    (max_extent[0] + 1.0) * half_width,
+    (-max_extent[1] + 1.0) * half_height,
+  ];
+
+  [Transforms {
+    view_matrix,
+    model_matrix,
+    model_view_matrix,
+    clipping_rect,
+  }]
 }
 
 impl<F> Bucket<F> {
@@ -58,7 +145,7 @@ impl<F> Bucket<F> {
       entries: &[
         wgpu::BindGroupLayoutEntry {
           binding: 0,
-          visibility: wgpu::ShaderStages::VERTEX,
+          visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
           ty: wgpu::BindingType::Buffer {
             ty: wgpu::BufferBindingType::Uniform,
             has_dynamic_offset: false,
@@ -68,7 +155,7 @@ impl<F> Bucket<F> {
         },
         wgpu::BindGroupLayoutEntry {
           binding: 1,
-          visibility: wgpu::ShaderStages::VERTEX,
+          visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
           ty: wgpu::BindingType::Buffer {
             ty: wgpu::BufferBindingType::Uniform,
             has_dynamic_offset: false,
@@ -79,9 +166,15 @@ impl<F> Bucket<F> {
       ],
     });
 
-    let world_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+    let (half_width, half_height) = view.get_half_size();
+    let transforms_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
       label: None,
-      contents: bytemuck::cast_slice(&view.view_matrix),
+      contents: bytemuck::cast_slice(&get_transforms(
+        view.view_matrix,
+        [0.0; 4],
+        half_width,
+        half_height,
+      )),
       usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
     });
 
@@ -97,7 +190,7 @@ impl<F> Bucket<F> {
       entries: &[
         wgpu::BindGroupEntry {
           binding: 0,
-          resource: world_buffer.as_entire_binding(),
+          resource: transforms_buffer.as_entire_binding(),
         },
         wgpu::BindGroupEntry {
           binding: 1,
@@ -147,13 +240,13 @@ impl<F> Bucket<F> {
       device,
       pipeline,
       features: Vec::new(),
-      extent: vec![0.0, 0.0, 0.0, 0.0],
+      extent: [0.0; 4],
       bind_group,
       vertex_wgpu_buffer: None,
       vertex_buffer: Vec::with_capacity(0),
       index_wgpu_buffer: None,
       index_buffer: Vec::with_capacity(0),
-      world_buffer,
+      transforms_buffer,
       extent_buffer,
     }
   }
@@ -167,10 +260,16 @@ impl<F> Bucket<F> {
         pass.set_pipeline(&self.pipeline);
         pass.set_bind_group(0, &self.bind_group, &[]);
 
+        let (half_width, half_height) = view.get_half_size();
         queue.write_buffer(
-          &self.world_buffer,
+          &self.transforms_buffer,
           0,
-          bytemuck::cast_slice(&view.view_matrix),
+          bytemuck::cast_slice(&get_transforms(
+            view.view_matrix,
+            self.extent,
+            half_width,
+            half_height,
+          )),
         );
         queue.write_buffer(&self.extent_buffer, 0, bytemuck::cast_slice(&self.extent));
 
@@ -250,6 +349,6 @@ impl<F> Bucket<F> {
   }
 
   pub fn set_extent(&mut self, extent: Vec<f32>) {
-    self.extent = extent;
+    self.extent = extent.try_into().expect("extent wrong format");
   }
 }

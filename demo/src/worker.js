@@ -1,9 +1,9 @@
 import init, { initThreadPool, start, render, addPbfTileData } from 'wgpu-layers'
 import { create, makeInverse } from 'ol/transform'
 
-import { READY, STARTED, CANVAS, FRAME_STATE, RENDERED, PBF_DATA } from './types'
+import { READY, STARTED, CANVAS, SHARED_ARRAY_BUFFER, PBF_DATA } from './types'
 
-let canvas, ready = false
+let canvas, shared_state, ready = false
 
 // https://github.com/gfx-rs/wgpu/issues/1986
 self.Window = WorkerGlobalScope
@@ -15,29 +15,10 @@ self.onmessage = async ({ data: { type, payload } }) => {
       await start(canvas)
       self.postMessage({ type: STARTED })
       ready = true
+      loop()
       break
-    case FRAME_STATE:
-      const { frameState: { size, viewState } } = payload
-      requestAnimationFrame(() => {
-        if (ready) {
-          const [width, height] = size
-          if (canvas.width != width || canvas.height != height) {
-            canvas.width = width
-            canvas.height = height
-          }
-          render(
-            getViewMatrix(viewState, canvas.width, canvas.height),
-            size
-          )
-        }
-        self.postMessage({
-          type: RENDERED, payload: {
-            frameState: {
-              viewState
-            }
-          }
-        })
-      })
+    case SHARED_ARRAY_BUFFER:
+      shared_state = payload
       break
     case PBF_DATA:
       const { data, tileCoord, extent } = payload
@@ -45,6 +26,45 @@ self.onmessage = async ({ data: { type, payload } }) => {
         addPbfTileData(new Uint8Array(data), tileCoord, extent)
       }
       break
+  }
+}
+
+function loop() {
+  Atomics.wait(new Int32Array(shared_state), 6, 0) // wait until notify
+
+  const { size, viewState } = getFrameState()
+
+  const [width, height] = size
+  if (canvas.width != width || canvas.height != height) {
+    canvas.width = width
+    canvas.height = height
+  }
+  render(
+    getViewMatrix(viewState, canvas.width, canvas.height),
+    size
+  )
+
+  setTimeout(loop)
+}
+
+function getFrameState() {
+  const slice = new Uint32Array(shared_state)
+
+  const buffer = new ArrayBuffer(shared_state.byteLength)
+  const f32_buffer = new Float32Array(buffer)
+  const uint32_buffer = new Uint32Array(buffer)
+
+  for (let i = 0; i < uint32_buffer.length; i++) {
+    uint32_buffer[i] = Atomics.load(slice, i)
+  }
+
+  return {
+    size: [uint32_buffer[0], uint32_buffer[1]],
+    viewState: {
+      center: [f32_buffer[2], f32_buffer[3]],
+      resolution: f32_buffer[4],
+      rotation: f32_buffer[5]
+    }
   }
 }
 
@@ -75,8 +95,8 @@ function getViewMatrix(viewState, width, height) {
   return [
     viewMatrix[0], viewMatrix[1], 0.0, 0.0,
     viewMatrix[2], viewMatrix[3], 0.0, 0.0,
-    viewMatrix[4], viewMatrix[5], 1.0, 0.0,
-    0.0, 0.0, 0.0, 1.0
+    0.0, 0.0, 1.0, 0.0,
+    viewMatrix[4], viewMatrix[5], 0.0, 1.0
   ]
 }
 

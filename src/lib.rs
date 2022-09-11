@@ -56,7 +56,13 @@ pub fn render(view_matrix: Vec<f32>, new_size: Vec<u32>) {
     match &borrowed_instance.renderer {
       Some(renderer) => {
         let mut borrowed_renderer = renderer.borrow_mut();
-        borrowed_renderer.view.view_matrix = view_matrix.try_into().expect("View matrix is wrong");
+        let mut view_matrix_array = [[0.0; 4]; 4];
+        for i in 0..4 {
+          for j in 0..4 {
+            view_matrix_array[i][j] = *view_matrix.get(i * 4 + j).expect("view matrix is wrong");
+          }
+        }
+        borrowed_renderer.view.view_matrix = view_matrix_array;
 
         let current_size = borrowed_instance.current_size.get();
         if current_size.0 != new_size[0] || current_size.1 != new_size[1] {
@@ -80,7 +86,7 @@ pub fn add_pbf_tile_data(pbf: Vec<u8>, tile_coord: Vec<u32>, extent: Vec<f32>) {
   let layer_index_option = parser
     .get_layer_names()
     .iter()
-    .position(|layer_name| layer_name == "country_polygons");
+    .position(|layer_name| layer_name == "land");
 
   match layer_index_option {
     Some(layer_index) => match parser.get_features(layer_index) {
