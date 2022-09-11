@@ -28,6 +28,13 @@ pub struct Transforms {
   clipping_rect: [f32; 4],
 }
 
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck_derive::Pod, bytemuck_derive::Zeroable)]
+pub struct Style {
+  /// fill color
+  fill_color: [f32; 4],
+}
+
 #[derive(Debug)]
 pub struct Bucket<F> {
   /// wgpu device
@@ -57,9 +64,6 @@ pub struct Bucket<F> {
 
   /// transforms buffer
   transforms_buffer: wgpu::Buffer,
-
-  /// extent buffer
-  extent_buffer: wgpu::Buffer,
 }
 
 /// tile_transform * flip_tile_transform because of Y-axis swap
@@ -136,7 +140,7 @@ impl<F> Bucket<F> {
     let shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
       label: None,
       source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!(
-        "shader/bucket.wgsl"
+        "shader/fill.wgsl"
       ))),
     });
 
@@ -155,7 +159,7 @@ impl<F> Bucket<F> {
         },
         wgpu::BindGroupLayoutEntry {
           binding: 1,
-          visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+          visibility: wgpu::ShaderStages::FRAGMENT,
           ty: wgpu::BindingType::Buffer {
             ty: wgpu::BufferBindingType::Uniform,
             has_dynamic_offset: false,
@@ -178,9 +182,12 @@ impl<F> Bucket<F> {
       usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
     });
 
-    let extent_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+    let style = Style {
+      fill_color: [1.0, 1.0, 0.0, 0.5],
+    };
+    let style_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
       label: None,
-      contents: bytemuck::cast_slice(&[0.0f32, 0.0f32, 0.0f32, 0.0f32]),
+      contents: bytemuck::cast_slice(&[style]),
       usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
     });
 
@@ -194,7 +201,7 @@ impl<F> Bucket<F> {
         },
         wgpu::BindGroupEntry {
           binding: 1,
-          resource: extent_buffer.as_entire_binding(),
+          resource: style_buffer.as_entire_binding(),
         },
       ],
     });
@@ -247,7 +254,6 @@ impl<F> Bucket<F> {
       index_wgpu_buffer: None,
       index_buffer: Vec::with_capacity(0),
       transforms_buffer,
-      extent_buffer,
     }
   }
 
@@ -271,7 +277,6 @@ impl<F> Bucket<F> {
             half_height,
           )),
         );
-        queue.write_buffer(&self.extent_buffer, 0, bytemuck::cast_slice(&self.extent));
 
         pass.set_vertex_buffer(0, vertex_buffer.slice(..));
         pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16);

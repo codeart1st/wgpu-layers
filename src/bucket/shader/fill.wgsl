@@ -5,11 +5,15 @@ struct Transforms {
   clipping_rect: vec4<f32>
 };
 
+struct Style {
+  fill_color: vec4<f32>,
+}
+
 @group(0) @binding(0)
 var<uniform> transforms: Transforms;
 
 @group(0) @binding(1)
-var<uniform> extent: vec4<f32>;
+var<uniform> style: Style;
 
 @vertex
 fn vs_main(
@@ -25,10 +29,8 @@ struct FragmentOutput {
 
 @fragment
 fn fs_main(@builtin(position) position: vec4<f32>) -> FragmentOutput {
-  var alpha = 0.5;
-
-  var out: FragmentOutput;
-  out.color = alpha * vec4<f32>(1.0, 0.0, 0.0, 1.0); // pre-multiplied alpha
+  var color = style.fill_color.a * vec4<f32>(style.fill_color.rgb, 1.0); // pre-multiplied alpha
+  var fragment_output = FragmentOutput(color, 0xFFFFFFFFu);
 
   if (
     position.x < transforms.clipping_rect[0] ||
@@ -36,9 +38,7 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> FragmentOutput {
     position.x > transforms.clipping_rect[2] ||
     position.y > transforms.clipping_rect[3]
   ) {
-    out.mask_out = 0x0u;
-  } else {
-    out.mask_out = 0xFFFFFFFFu;
+    fragment_output.mask_out = 0u;
   }
-  return out;
+  return fragment_output;
 }
