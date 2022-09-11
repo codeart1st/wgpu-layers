@@ -36,7 +36,7 @@ impl View {
     self.width = width;
     self.height = height;
     self.half_width = width as f32 * 0.5;
-    self.half_width = width as f32 * 0.5;
+    self.half_height = height as f32 * 0.5;
   }
 
   pub fn get_size(&self) -> (u32, u32) {

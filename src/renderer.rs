@@ -98,6 +98,7 @@ impl Renderer {
     self.surface_config.width = width;
     self.surface_config.height = height;
     self.surface.configure(&self.device, &self.surface_config);
+    self.view.set_size((width, height));
   }
 
   pub fn render<T: Debug>(&self, buckets: &[Bucket<T>]) {
