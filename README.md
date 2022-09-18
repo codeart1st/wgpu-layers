@@ -1,6 +1,6 @@
 # Preview
 
-![image](https://user-images.githubusercontent.com/581407/189522082-0e56db05-731c-4df7-b49e-d6e7e932ba4e.png)
+![image](https://user-images.githubusercontent.com/581407/190889486-81f80bce-3ee1-40e5-9aa2-285987e3beeb.png)
 
 # Browser support
 
