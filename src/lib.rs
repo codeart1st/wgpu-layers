@@ -1,7 +1,12 @@
-use std::cell::{Cell, RefCell};
+use std::{
+  cell::{Cell, RefCell},
+  sync::Mutex,
+};
+
+#[macro_use]
+extern crate lazy_static;
 
 use geo_types::GeometryCollection;
-use log::info;
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
@@ -21,8 +26,13 @@ pub struct Instance {
   current_size: Cell<(u32, u32)>,
 }
 
-thread_local! {
-  static INSTANCE: RefCell<Instance> = RefCell::new(Instance::default());
+pub struct Mapped {
+  mapped: bool,
+}
+
+lazy_static! {
+  pub static ref INSTANCE: Mutex<Instance> = Mutex::new(Instance::default());
+  pub static ref MAPPED: Mutex<Mapped> = Mutex::new(Mapped { mapped: false });
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -51,9 +61,8 @@ mod wasm {
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 pub fn render(view_matrix: Vec<f32>, new_size: Vec<u32>) {
-  INSTANCE.with(|instance| {
-    let borrowed_instance = instance.borrow();
-    match &borrowed_instance.renderer {
+  if let Ok(instance) = INSTANCE.try_lock() {
+    match &instance.renderer {
       Some(renderer) => {
         let mut borrowed_renderer = renderer.borrow_mut();
         let mut view_matrix_array = [[0.0; 4]; 4];
@@ -64,63 +73,69 @@ pub fn render(view_matrix: Vec<f32>, new_size: Vec<u32>) {
         }
         borrowed_renderer.view.view_matrix = view_matrix_array;
 
-        let current_size = borrowed_instance.current_size.get();
+        let current_size = instance.current_size.get();
         if current_size.0 != new_size[0] || current_size.1 != new_size[1] {
-          borrowed_instance
-            .current_size
-            .set((new_size[0], new_size[1]));
-          borrowed_renderer.set_size(borrowed_instance.current_size.get());
+          instance.current_size.set((new_size[0], new_size[1]));
+          borrowed_renderer.set_size(instance.current_size.get());
         }
 
-        borrowed_renderer.render(&borrowed_instance.buckets.borrow());
+        borrowed_renderer.render(&instance.buckets.borrow());
       }
-      None => (),
+      None => todo!(),
     }
-  });
+  }
 }
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = addPbfTileData))]
-pub fn add_pbf_tile_data(pbf: Vec<u8>, tile_coord: Vec<u32>, extent: Vec<f32>) {
+pub async fn add_pbf_tile_data(pbf: Vec<u8>, tile_coord: Vec<u32>, extent: Vec<f32>) {
   let parser = parser::Parser::new(pbf).expect("parse error");
+
+  // TODO: map tile_coord (key) to bucket (value)
+  // TODO: later pass z index together with grid extent (min tile and max tile) to find out which buckets needs to be drawn
 
   let layer_index_option = parser
     .get_layer_names()
     .iter()
     .position(|layer_name| layer_name == "land");
 
-  match layer_index_option {
-    Some(layer_index) => match parser.get_features(layer_index) {
-      Some(mut parsed_features) => {
-        if parsed_features.is_empty() {
-          return;
-        }
-        INSTANCE.with(|instance| {
-          let borrowed_instance = instance.borrow();
-
-          match &borrowed_instance.renderer {
+  if let Ok(instance) = INSTANCE.try_lock() {
+    match layer_index_option {
+      Some(layer_index) => match parser.get_features(layer_index) {
+        Some(mut parsed_features) => {
+          if parsed_features.is_empty() {
+            return;
+          }
+          match &instance.renderer {
             Some(renderer) => {
-              let borrowed_renderer = renderer.borrow();
+              let mut borrowed_renderer = renderer.borrow_mut();
               let mut bucket = borrowed_renderer.create_bucket();
               bucket.add_features(&mut parsed_features);
               bucket.set_extent(extent);
 
-              borrowed_instance.buckets.borrow_mut().push(bucket);
+              if let Ok(mut mapped) = MAPPED.lock() {
+                if !mapped.mapped {
+                  mapped.mapped = true;
+                  borrowed_renderer.compute().await;
+                }
+              }
+
+              instance.buckets.borrow_mut().push(bucket);
             }
             None => (),
           }
-        });
-      }
+        }
+        None => (),
+      },
       None => (),
-    },
-    None => (),
+    }
   }
 }
 
 pub async fn init<W: renderer::ToSurface>(window: &W, size: (u32, u32)) {
   let renderer = RefCell::new(renderer::Renderer::new(window, size).await);
 
-  INSTANCE.with(|instance| {
-    instance.borrow_mut().renderer = Some(renderer);
-    instance.borrow_mut().current_size = Cell::new(size);
-  })
+  if let Ok(mut instance) = INSTANCE.lock() {
+    instance.renderer = Some(renderer);
+    instance.current_size = Cell::new(size);
+  }
 }

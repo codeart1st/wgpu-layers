@@ -1,12 +1,15 @@
-use std::{fmt::Debug, rc::Rc};
+use std::{fmt::Debug, sync::Arc};
 
-use log::info;
+use log::{info, warn};
 
-use crate::{bucket::Bucket, view::View};
+use crate::{
+  bucket::{line_tessellation::LineTessellation, Bucket},
+  view::View,
+};
 
 pub struct Renderer {
-  /// wgpu device
-  pub device: Rc<wgpu::Device>,
+  /// wgpu device queue pair
+  pub device_queue: (Arc<wgpu::Device>, Arc<wgpu::Queue>),
 
   /// preferred texutre format of surface
   pub texture_format: wgpu::TextureFormat,
@@ -14,8 +17,8 @@ pub struct Renderer {
   /// used view
   pub view: View,
 
-  /// wgpu queue
-  queue: wgpu::Queue,
+  /// line tessellation
+  line_tessellation: LineTessellation,
 
   /// wgpu surface
   surface: wgpu::Surface,
@@ -64,6 +67,9 @@ impl Renderer {
 
     info!("device: {:?}", device);
 
+    let device = Arc::new(device);
+    let queue = Arc::new(queue);
+
     let texture_format = surface
       .get_supported_formats(&adapter)
       .first()
@@ -80,31 +86,46 @@ impl Renderer {
 
     surface.configure(&device, &surface_config);
 
+    let line_tessellation = LineTessellation::new((device.clone(), queue.clone()));
+
     Self {
-      device: Rc::new(device),
+      device_queue: (device, queue),
       texture_format,
       view: View::new((width, height)),
+      line_tessellation,
       surface,
-      queue,
       surface_config,
     }
   }
 
   pub fn create_bucket<T>(&self) -> Bucket<T> {
-    Bucket::new(self.device.to_owned(), &self.texture_format, &self.view)
+    let (device, _) = &self.device_queue;
+    Bucket::new(device.clone(), &self.texture_format, &self.view)
   }
 
   pub fn set_size(&mut self, (width, height): (u32, u32)) {
+    let (device, _) = &self.device_queue;
+
     self.surface_config.width = width;
     self.surface_config.height = height;
-    self.surface.configure(&self.device, &self.surface_config);
+    self.surface.configure(device, &self.surface_config);
     self.view.set_size((width, height));
   }
 
+  pub async fn compute(&mut self) {
+    let vertices = [0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0];
+    let indices = [0, 1, 2, 3];
+
+    self
+      .line_tessellation
+      .tessellate((&vertices, &indices))
+      .await;
+  }
+
   pub fn render<T: Debug>(&self, buckets: &[Bucket<T>]) {
-    let mut command_encoder = self
-      .device
-      .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+    let (device, queue) = &self.device_queue;
+    let mut command_encoder =
+      device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
     let surface_texture = self
       .surface
@@ -124,9 +145,9 @@ impl Renderer {
           ops: wgpu::Operations {
             load: wgpu::LoadOp::Clear(wgpu::Color {
               r: 0.0,
-              g: 0.0,
-              b: 0.0,
-              a: 0.0,
+              g: 0.412,
+              b: 0.58,
+              a: 1.0,
             }),
             store: true,
           },
@@ -149,10 +170,10 @@ impl Renderer {
         depth_stencil_attachment: None,
       });
 
-      bucket.render(&mut pass, &self.queue, &self.view);
+      bucket.render(&mut pass, queue, &self.view);
     }
 
-    self.queue.submit(command_encoder.finish().try_into());
+    queue.submit(Some(command_encoder.finish()));
     surface_texture.present();
   }
 }

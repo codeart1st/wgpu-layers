@@ -1,4 +1,4 @@
-use std::{convert::TryInto, rc::Rc};
+use std::{convert::TryInto, sync::Arc};
 
 use geo_types::Geometry::*;
 use log::info;
@@ -7,6 +7,7 @@ use wgpu::util::DeviceExt;
 use crate::view::View;
 
 pub mod feature;
+pub mod line_tessellation;
 
 const DIMENSIONS: usize = 2;
 
@@ -38,7 +39,7 @@ pub struct Style {
 #[derive(Debug)]
 pub struct Bucket<F> {
   /// wgpu device
-  device: Rc<wgpu::Device>,
+  device: Arc<wgpu::Device>,
 
   /// wgpu pipeline
   pipeline: wgpu::RenderPipeline,
@@ -136,7 +137,7 @@ fn get_transforms(
 }
 
 impl<F> Bucket<F> {
-  pub fn new(device: Rc<wgpu::Device>, texture_format: &wgpu::TextureFormat, view: &View) -> Self {
+  pub fn new(device: Arc<wgpu::Device>, texture_format: &wgpu::TextureFormat, view: &View) -> Self {
     let shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
       label: None,
       source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!(
@@ -183,7 +184,7 @@ impl<F> Bucket<F> {
     });
 
     let style = Style {
-      fill_color: [1.0, 1.0, 0.0, 0.5],
+      fill_color: [0.506, 0.694, 0.31, 1.0],
     };
     let style_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
       label: None,

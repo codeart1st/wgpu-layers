@@ -1,7 +1,7 @@
 import { Map, View } from 'ol'
 import { Tile } from 'ol/layer'
 import { createXYZ } from 'ol/tilegrid'
-import { OSM, TileDebug, VectorTile } from 'ol/source'
+import { TileDebug, VectorTile } from 'ol/source'
 
 import { OffscreenTileLayer } from './OffscreenTileLayer'
 
@@ -27,9 +27,6 @@ function start() {
   new Map({
     target: 'map',
     layers: [
-      new Tile({
-        source: new OSM()
-      }),
       offscreenTileLayer,
       new Tile({
         source: new TileDebug({

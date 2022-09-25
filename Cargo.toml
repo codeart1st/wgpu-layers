@@ -15,6 +15,8 @@ default = ["console_error_panic_hook", "console_log"]
 log = "0.4.17"
 wgpu = "0.13.1"
 rayon = "1.5.3"
+futures = "0.3"
+lazy_static = "1.4.0"
 geo-types = "0.7.7"
 bytemuck = "1.12.1"
 bytemuck_derive = "1.2.1"
@@ -35,9 +37,11 @@ web-sys = { version = "0.3.58", features = [
 pollster = "0.2.5"
 env_logger = "0.9.0"
 winit = "0.27.2"
+raw-window-handle = "=0.4.3" # fix test execution
 
 [build-dependencies]
 prost-build = "0.11.1"
 
 [profile.release]
 opt-level = "s"
+lto = true

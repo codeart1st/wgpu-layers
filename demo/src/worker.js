@@ -23,7 +23,7 @@ self.onmessage = async ({ data: { type, payload } }) => {
     case PBF_DATA:
       const { data, tileCoord, extent } = payload
       if (ready) {
-        addPbfTileData(new Uint8Array(data), tileCoord, extent)
+        await addPbfTileData(new Uint8Array(data), tileCoord, extent)
       }
       break
   }

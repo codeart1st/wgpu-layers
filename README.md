@@ -18,3 +18,9 @@ wasm-pack build --target web
 ```sh
 cargo run --example window --target `rustc -vV | sed -n 's|host: ||p'`
 ```
+
+# Run tests
+
+```sh
+LIBGL_ALWAYS_SOFTWARE=true WGPU_BACKEND=gl cargo test --target `rustc -vV | sed -n 's|host: ||p'` -- --nocapture
+```
