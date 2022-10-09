@@ -1,5 +1,7 @@
 #[cfg(target_arch = "wasm32")]
 mod tests {
+  use log::info;
+  use wasm_bindgen::prelude::*;
   use wasm_bindgen::JsCast;
   use wasm_bindgen_futures::JsFuture;
   use wasm_bindgen_rayon::init_thread_pool;
@@ -7,13 +9,10 @@ mod tests {
 
   wasm_bindgen_test_configure!(run_in_browser);
 
-  #[wasm_bindgen_test]
-  fn fail() {
-    assert_eq!(1, 2);
-  }
+  const BASE64_PREFIX: &str = "data:image/png;base64,";
 
   #[wasm_bindgen_test]
-  async fn test() {
+  async fn empty() {
     // FIXME: testing multithreaded wasm is not possible for now, see: https://github.com/rustwasm/wasm-bindgen/issues/2892
     /*let _ = JsFuture::from(init_thread_pool(
       web_sys::window()
@@ -43,9 +42,12 @@ mod tests {
       .map_err(|_| ())
       .unwrap();
 
+    canvas.set_width(512);
+    canvas.set_height(512);
+
     let size = vec![canvas.width(), canvas.height()];
 
-    wgpu_layers::wasm::start_with_canvas(canvas).await;
+    wgpu_layers::wasm::start_with_canvas(&canvas).await;
 
     #[rustfmt::skip]
     let view_matrix = vec![
@@ -55,6 +57,48 @@ mod tests {
       0.0, 0.0, 0.0, 1.0,
     ];
     wgpu_layers::render(view_matrix, size);
-    assert_eq!(1, 55);
+
+    let promise = js_sys::Promise::new(&mut move |resolve, _| {
+      let cb = Closure::wrap(Box::new(move |blob| {
+        let args = js_sys::Array::new();
+        args.set(0, JsValue::from(blob));
+        resolve.apply(&JsValue::NULL, &args);
+      }) as Box<dyn Fn(web_sys::Blob)>);
+      canvas.to_blob(cb.as_ref().unchecked_ref());
+      cb.forget(); // leaking
+    });
+
+    let blob = JsFuture::from(promise).await.unwrap();
+    let blob = web_sys::Blob::from(blob);
+
+    let promise = js_sys::Promise::new(&mut move |resolve, _| {
+      let file_reader = std::rc::Rc::new(web_sys::FileReader::new().unwrap());
+      let file_reader_cb = file_reader.clone();
+
+      let cb = Closure::wrap(Box::new(move |event| {
+        let args = js_sys::Array::new();
+        info!("{:?}", event);
+        let data_url = file_reader_cb.result().unwrap();
+        args.set(0, JsValue::from(data_url));
+        resolve.apply(&JsValue::NULL, &args);
+      }) as Box<dyn Fn(web_sys::Blob)>);
+
+      file_reader.set_onload(Some(&cb.as_ref().unchecked_ref()));
+      file_reader.read_as_data_url(&blob);
+
+      cb.forget(); // leaking
+    });
+
+    let data_url = JsFuture::from(promise).await.unwrap();
+
+    let expect: String = [
+      BASE64_PREFIX,
+      include_base64::include_base64!("tests/snapshots/render_test_empty.png"),
+    ]
+    .join("")
+    .replace("_", "/")
+    .replace("-", "+");
+
+    assert_eq!(data_url.as_string().unwrap(), expect);
   }
 }
