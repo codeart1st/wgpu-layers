@@ -1,4 +1,4 @@
-import init, { initThreadPool, start, render, addPbfTileData } from 'wgpu-layers'
+import init, { initThreadPool, startWithOffscreenCanvas, render, addPbfTileData } from 'wgpu-layers'
 import { create, makeInverse } from 'ol/transform'
 
 import { READY, STARTED, CANVAS, SHARED_ARRAY_BUFFER, PBF_DATA } from './types'
@@ -12,7 +12,7 @@ self.onmessage = async ({ data: { type, payload } }) => {
   switch (type) {
     case CANVAS:
       canvas = payload.canvas
-      await start(canvas)
+      await startWithOffscreenCanvas(canvas)
       self.postMessage({ type: STARTED })
       ready = true
       loop()

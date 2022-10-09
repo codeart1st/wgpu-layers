@@ -1,6 +1,6 @@
 use std::{fmt::Debug, sync::Arc};
 
-use log::{info, warn};
+use log::info;
 
 use crate::{
   bucket::{line_tessellation::LineTessellation, Bucket},
@@ -82,6 +82,7 @@ impl Renderer {
       width,
       height,
       present_mode: wgpu::PresentMode::Fifo,
+      alpha_mode: wgpu::CompositeAlphaMode::PreMultiplied,
     };
 
     surface.configure(&device, &surface_config);
