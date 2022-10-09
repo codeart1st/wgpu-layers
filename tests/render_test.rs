@@ -14,7 +14,7 @@ mod tests {
 
   #[wasm_bindgen_test]
   async fn test() {
-    // FIXME: testing multithreaded wasm is not possible for now, see: https://github.com/GoogleChromeLabs/wasm-bindgen-rayon/issues/30
+    // FIXME: testing multithreaded wasm is not possible for now, see: https://github.com/rustwasm/wasm-bindgen/issues/2892
     /*let _ = JsFuture::from(init_thread_pool(
       web_sys::window()
         .unwrap()
