@@ -70,11 +70,22 @@ impl Renderer {
     let device = Arc::new(device);
     let queue = Arc::new(queue);
 
-    let texture_format = surface
-      .get_supported_formats(&adapter)
-      .last()
-      .expect("Can't get texture format for surface.")
-      .to_owned();
+    let preferred_format = wgpu::TextureFormat::Bgra8Unorm;
+    let supported_formats = surface.get_supported_formats(&adapter);
+
+    info!(
+      "supported surface formats: {:?}",
+      surface.get_supported_formats(&adapter)
+    );
+
+    let texture_format = if supported_formats.contains(&preferred_format) {
+      preferred_format
+    } else {
+      supported_formats
+        .first()
+        .expect("Can't get texture format for surface.")
+        .to_owned()
+    };
 
     let surface_config = wgpu::SurfaceConfiguration {
       usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
