@@ -26,6 +26,7 @@ fn create_map_window() -> (winit::event_loop::EventLoop<()>, MapWindow) {
   let size = winit::dpi::PhysicalSize::new(512, 512);
   let window_builder = winit::window::WindowBuilder::new()
     .with_title("wgpu-map")
+    .with_transparent(true)
     .with_min_inner_size(size)
     .with_max_inner_size(size)
     .with_inner_size(size);

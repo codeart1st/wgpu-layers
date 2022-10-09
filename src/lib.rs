@@ -65,14 +65,14 @@ pub mod wasm {
   }
 
   #[wasm_bindgen(js_name = startWithCanvas)]
-  pub async fn start_with_canvas(canvas: web_sys::HtmlCanvasElement) {
+  pub async fn start_with_canvas(canvas: &web_sys::HtmlCanvasElement) {
     #[cfg(feature = "console_error_panic_hook")]
     console_error_panic_hook::set_once();
 
     #[cfg(feature = "console_log")]
     console_log::init_with_level(log::Level::Info).expect("error initializing logger");
 
-    super::init(&canvas, (canvas.width(), canvas.height())).await;
+    super::init(canvas, (canvas.width(), canvas.height())).await;
   }
 }
 

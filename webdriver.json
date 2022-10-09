@@ -1,0 +1,8 @@
+{
+  "goog:chromeOptions": {
+    "args": [
+      "--enable-unsafe-webgpu",
+      "--enable-features=UseSkiaRenderer,Vulkan"
+    ]
+  }
+}

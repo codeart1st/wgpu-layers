@@ -11,7 +11,7 @@ wasm-pack build --target web
 # Run a native example
 
 ```sh
-cargo run --example window --target `rustc -vV | sed -n 's|host: ||p'`
+WINIT_UNIX_BACKEND=x11 cargo run --example window --target `rustc -vV | sed -n 's|host: ||p'`
 ```
 
 # Run tests

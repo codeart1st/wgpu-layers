@@ -72,7 +72,7 @@ impl Renderer {
 
     let texture_format = surface
       .get_supported_formats(&adapter)
-      .first()
+      .last()
       .expect("Can't get texture format for surface.")
       .to_owned();
 
