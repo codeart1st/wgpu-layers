@@ -5,7 +5,7 @@
 # Build the project
 
 ```sh
-wasm-pack build --target web
+wasm-pack build --all-features --target web --dev
 ```
 
 # Run a native example
