@@ -1,0 +1,46 @@
+name: Prepare build environment
+
+runs:
+  using: "composite"
+  steps:
+    - name: Use protobuf-compiler latest
+      shell: bash
+      run: sudo apt-get install protobuf-compiler -y
+
+    - name: Use wasm-pack latest
+      shell: bash
+      run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+    - name: Cache rust-toolchain (shared)
+      id: rustup-cache
+      uses: actions/cache@v3.0.10
+      with:
+        path: |
+          ~/.rustup/toolchains
+          ~/.rustup/update-hashes
+          ~/.rustup/settings.toml
+        key: toolchain-${{ hashFiles('rust-toolchain') }}-2
+
+    - name: Use rust-toolchain nightly
+      if: steps.rustup-cache.outputs.cache-hit != 'true'
+      id: rustup
+      shell: bash
+      run: |
+        rustup toolchain uninstall stable
+        rustup toolchain install $(cat rust-toolchain) --profile minimal \
+          --target wasm32-unknown-unknown --component clippy,rust-src
+        rustup show
+        echo "::set-output name=version::$(rustc --version | cut -d ' ' -f 2)"
+
+    - name: Cache cargo output (job)
+      uses: pat-s/always-upload-cache@v3.0.1 # https://github.com/actions/cache/issues/92
+      with:
+        key: ${{ runner.os }}-${{ steps.rustup.outputs.version }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ github.job }}-5
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/.crates.toml
+          ~/.cargo/.crates2.json
+          ~/.cargo/.package-cache
+          ~/.cargo/registry/
+          ~/.cargo/git/db/
+          target/
