@@ -88,7 +88,7 @@ async fn start(
       _ => (),
     },
     winit::event::Event::WindowEvent {
-      event: winit::event::WindowEvent::Resized(size),
+      event: winit::event::WindowEvent::Resized(_),
       ..
     } => {}
     winit::event::Event::MainEventsCleared => {}

@@ -1,8 +1,5 @@
-use log::{info, warn};
 use std::sync::Arc;
 use wgpu::util::DeviceExt;
-
-use wgpu::{BindGroupLayoutEntry, SubmissionIndex};
 
 static WORK_GROUP_MAX_X: f32 = 256.0;
 
@@ -36,7 +33,7 @@ impl LineTessellation {
     let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
       label: None,
       entries: &[
-        BindGroupLayoutEntry {
+        wgpu::BindGroupLayoutEntry {
           binding: 0,
           visibility: wgpu::ShaderStages::COMPUTE,
           ty: wgpu::BindingType::Buffer {
@@ -46,7 +43,7 @@ impl LineTessellation {
           },
           count: None,
         },
-        BindGroupLayoutEntry {
+        wgpu::BindGroupLayoutEntry {
           binding: 1,
           visibility: wgpu::ShaderStages::COMPUTE,
           ty: wgpu::BindingType::Buffer {
@@ -56,7 +53,7 @@ impl LineTessellation {
           },
           count: None,
         },
-        BindGroupLayoutEntry {
+        wgpu::BindGroupLayoutEntry {
           binding: 2,
           visibility: wgpu::ShaderStages::COMPUTE,
           ty: wgpu::BindingType::Buffer {
@@ -66,7 +63,7 @@ impl LineTessellation {
           },
           count: None,
         },
-        BindGroupLayoutEntry {
+        wgpu::BindGroupLayoutEntry {
           binding: 3,
           visibility: wgpu::ShaderStages::COMPUTE,
           ty: wgpu::BindingType::Buffer {
@@ -99,7 +96,6 @@ impl LineTessellation {
     }
   }
 
-  // TODO: maybe later a variant with VERTEX and INDEX buffer as input params
   fn create_buffers(&self, vertices: &[f32], indices: &[u32]) -> [wgpu::Buffer; 4] {
     let (device, _) = &self.device_queue;
 
@@ -170,6 +166,7 @@ impl LineTessellation {
     })
   }
 
+  // TODO: maybe later a variant with VERTEX and INDEX buffer as input params
   pub async fn tessellate(
     &self,
     (vertices, indices): (&[f32], &[u32]),
@@ -222,6 +219,7 @@ impl LineTessellation {
 #[cfg(not(target_arch = "wasm32"))]
 mod tests {
   use super::*;
+  use log::info;
 
   async fn initialize_test() -> (wgpu::Device, wgpu::Queue) {
     env_logger::init_from_env(
@@ -319,6 +317,7 @@ mod tests {
     let handle1 = std::thread::spawn(move || {
       match pollster::block_on(line_tessellation1.tessellate((&vertices, &indices))) {
         [(vertices, vertices_size), (indices, indices_size)] => {
+          vertices.size(); // TODO: use instead of vertices_size
           pollster::block_on(map_and_log_buffer(
             (device1.clone(), queue1.clone()),
             &vertices,

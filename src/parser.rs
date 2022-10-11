@@ -104,17 +104,16 @@ fn shoelace_formula(points: &[Point<f32>]) -> f32 {
   let mut area: f32 = 0.0;
   let n = points.len();
   let mut v1 = points[n - 1];
-  for i in 0..n {
-    let v2 = points[i];
+  for v2 in points.iter().take(n) {
     area += (v2.y() as f32 - v1.y() as f32) * (v2.x() + v1.x()) as f32;
-    v1 = v2;
+    v1 = *v2;
   }
   area * 0.5
 }
 
 fn parse_geometry(
   geometry_data: &[u32],
-  geom_type: vector_tile::tile::GeomType,
+  _geom_type: vector_tile::tile::GeomType,
 ) -> GeometryCollection<f32> {
   // worst case capacity to prevent reallocation. not needed to be exact.
   let mut coordinates = Vec::with_capacity(geometry_data.len());
@@ -123,13 +122,13 @@ fn parse_geometry(
 
   let mut cursor = [0, 0];
   let mut parameter_count: u32 = 0;
-  let mut id: u8 = 0;
+  let mut _id: u8 = 0;
 
   for (_, value) in geometry_data.iter().enumerate() {
     if parameter_count == 0 {
       let command_integer = value;
-      id = (command_integer & 0x7) as u8;
-      match id {
+      _id = (command_integer & 0x7) as u8;
+      match _id {
         1 | 2 => {
           // MoveTo | LineTo
           parameter_count = (command_integer >> 3) * 2; // 2-dimensional

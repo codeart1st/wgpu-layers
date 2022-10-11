@@ -83,6 +83,8 @@ pub fn render(view_matrix: Vec<f32>, new_size: Vec<u32>) {
       Some(renderer) => {
         let mut borrowed_renderer = renderer.borrow_mut();
         let mut view_matrix_array = [[0.0; 4]; 4];
+
+        #[allow(clippy::needless_range_loop)]
         for i in 0..4 {
           for j in 0..4 {
             view_matrix_array[i][j] = *view_matrix.get(i * 4 + j).expect("view matrix is wrong");
@@ -104,7 +106,7 @@ pub fn render(view_matrix: Vec<f32>, new_size: Vec<u32>) {
 }
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = addPbfTileData))]
-pub async fn add_pbf_tile_data(pbf: Vec<u8>, tile_coord: Vec<u32>, extent: Vec<f32>) {
+pub async fn add_pbf_tile_data(pbf: Vec<u8>, _tile_coord: Vec<u32>, extent: Vec<f32>) {
   let parser = parser::Parser::new(pbf).expect("parse error");
 
   // TODO: map tile_coord (key) to bucket (value)

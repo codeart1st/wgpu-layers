@@ -4,7 +4,6 @@ mod tests {
   use wasm_bindgen::prelude::*;
   use wasm_bindgen::JsCast;
   use wasm_bindgen_futures::JsFuture;
-  use wasm_bindgen_rayon::init_thread_pool;
   use wasm_bindgen_test::*;
 
   wasm_bindgen_test_configure!(run_in_browser);
@@ -14,7 +13,7 @@ mod tests {
   #[wasm_bindgen_test]
   async fn empty() {
     // FIXME: testing multithreaded wasm is not possible for now, see: https://github.com/rustwasm/wasm-bindgen/issues/2892
-    /*let _ = JsFuture::from(init_thread_pool(
+    /*let _ = JsFuture::from(wasm_bindgen_rayon::init_thread_pool(
       web_sys::window()
         .unwrap()
         .navigator()
@@ -62,9 +61,9 @@ mod tests {
       let cb = Closure::wrap(Box::new(move |blob| {
         let args = js_sys::Array::new();
         args.set(0, JsValue::from(blob));
-        resolve.apply(&JsValue::NULL, &args);
+        resolve.apply(&JsValue::NULL, &args).unwrap();
       }) as Box<dyn Fn(web_sys::Blob)>);
-      canvas.to_blob(cb.as_ref().unchecked_ref());
+      canvas.to_blob(cb.as_ref().unchecked_ref()).unwrap();
       cb.forget(); // leaking
     });
 
@@ -79,12 +78,12 @@ mod tests {
         let args = js_sys::Array::new();
         info!("{:?}", event);
         let data_url = file_reader_cb.result().unwrap();
-        args.set(0, JsValue::from(data_url));
-        resolve.apply(&JsValue::NULL, &args);
+        args.set(0, data_url);
+        resolve.apply(&JsValue::NULL, &args).unwrap();
       }) as Box<dyn Fn(web_sys::Blob)>);
 
-      file_reader.set_onload(Some(&cb.as_ref().unchecked_ref()));
-      file_reader.read_as_data_url(&blob);
+      file_reader.set_onload(Some(cb.as_ref().unchecked_ref()));
+      file_reader.read_as_data_url(&blob).unwrap();
 
       cb.forget(); // leaking
     });
@@ -96,8 +95,8 @@ mod tests {
       include_base64::include_base64!("tests/snapshots/render_test_empty.png"),
     ]
     .join("")
-    .replace("_", "/")
-    .replace("-", "+");
+    .replace('_', "/")
+    .replace('-', "+");
 
     assert_eq!(data_url.as_string().unwrap(), expect);
   }

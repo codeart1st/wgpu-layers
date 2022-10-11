@@ -34,6 +34,12 @@ pub struct Transforms {
 pub struct Style {
   /// fill color
   fill_color: [f32; 4],
+
+  /// stroke color
+  stroke_color: [f32; 4],
+
+  /// stroke width
+  stroke_width: f32,
 }
 
 #[derive(Debug)]
@@ -85,6 +91,7 @@ fn get_model_matrix(extent: [f32; 4], tile_size: f32) -> [[f32; 4]; 4] {
   mat4x4_mul(&tile_transform, &flip_tile_transform)
 }
 
+#[allow(clippy::needless_range_loop)]
 fn mat4x4_mul(a: &[[f32; 4]; 4], b: &[[f32; 4]; 4]) -> [[f32; 4]; 4] {
   let mut c = [[0.0; 4]; 4];
 
@@ -98,6 +105,7 @@ fn mat4x4_mul(a: &[[f32; 4]; 4], b: &[[f32; 4]; 4]) -> [[f32; 4]; 4] {
   c
 }
 
+#[allow(clippy::needless_range_loop)]
 fn mat4x4_mul_vec4(a: &[[f32; 4]; 4], b: &[f32; 4]) -> [f32; 4] {
   let mut result = [0.0; 4];
   for i in 0..4 {
@@ -141,7 +149,7 @@ impl<F> Bucket<F> {
     let shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
       label: None,
       source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!(
-        "shader/fill.wgsl"
+        "shader/styling.wgsl"
       ))),
     });
 
@@ -185,6 +193,8 @@ impl<F> Bucket<F> {
 
     let style = Style {
       fill_color: [0.506, 0.694, 0.31, 1.0],
+      stroke_color: [0.0, 0.0, 0.0, 1.0],
+      stroke_width: 10.0,
     };
     let style_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
       label: None,
@@ -218,7 +228,7 @@ impl<F> Bucket<F> {
       layout: Some(&pipeline_layout),
       vertex: wgpu::VertexState {
         module: &shader_module,
-        entry_point: "vs_main",
+        entry_point: "vs_fill",
         buffers: &[wgpu::VertexBufferLayout {
           array_stride: 8,
           step_mode: wgpu::VertexStepMode::Vertex,
@@ -231,7 +241,7 @@ impl<F> Bucket<F> {
       },
       fragment: Some(wgpu::FragmentState {
         module: &shader_module,
-        entry_point: "fs_main",
+        entry_point: "fs_fill",
         targets: &[Some(wgpu::ColorTargetState {
           format: *texture_format,
           blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),

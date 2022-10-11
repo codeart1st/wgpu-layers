@@ -28,6 +28,16 @@ pub struct Renderer {
 }
 
 pub trait ToSurface {
+  /// Creates a surface from a raw window handle.
+  ///
+  /// If the specified display and window handle are not supported by any of the backends, then the surface
+  /// will not be supported by any adapters.
+  ///
+  /// # Safety
+  ///
+  /// - Raw Window Handle must be a valid object to create a surface upon and
+  ///   must remain valid for the lifetime of the returned surface.
+  /// - If not called on the main thread, metal backend will panic.
   unsafe fn create_surface(&self, instance: &wgpu::Instance) -> wgpu::Surface;
 }
 
