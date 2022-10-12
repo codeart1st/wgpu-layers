@@ -5,7 +5,7 @@ runs:
   steps:
     - name: Use protobuf-compiler latest
       shell: bash
-      run: sudo apt-get install protobuf-compiler -y
+      run: sudo apt-get install -y protobuf-compiler
 
     - name: Use wasm-pack latest
       shell: bash
@@ -19,7 +19,7 @@ runs:
           ~/.rustup/toolchains
           ~/.rustup/update-hashes
           ~/.rustup/settings.toml
-        key: toolchain-${{ hashFiles('rust-toolchain') }}-2
+        key: toolchain-${{ hashFiles('rust-toolchain') }}-1
 
     - name: Use rust-toolchain nightly
       if: steps.rustup-cache.outputs.cache-hit != 'true'
@@ -35,7 +35,7 @@ runs:
     - name: Cache cargo output (job)
       uses: pat-s/always-upload-cache@v3.0.1 # https://github.com/actions/cache/issues/92
       with:
-        key: ${{ runner.os }}-${{ steps.rustup.outputs.version }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ github.job }}-5
+        key: ${{ runner.os }}-${{ steps.rustup.outputs.version }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ github.job }}-1
         path: |
           ~/.cargo/bin/
           ~/.cargo/.crates.toml

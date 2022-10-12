@@ -6,6 +6,5 @@ runs:
     - name: Install mesa dependencies
       shell: bash
       run: |
-        sudo apt-get update -y -qq
         sudo add-apt-repository ppa:oibaf/graphics-drivers -y
-        sudo apt install -y libegl1-mesa libgl1-mesa-dri libxcb-xfixes0-dev mesa-vulkan-drivers
+        sudo apt-get install -y libegl1-mesa libgl1-mesa-dri libxcb-xfixes0-dev mesa-vulkan-drivers
