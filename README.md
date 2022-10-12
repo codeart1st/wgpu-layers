@@ -9,7 +9,7 @@
 <div align="center">
   Currently only a playground for rust, wgpu, openlayers web mapping combo
 </div>
-
+<br>
 <div align="center">
   <a href="https://github.com/codeart1st/wgpu-layers/actions/workflows/ci.yml">
     <img src="https://github.com/codeart1st/wgpu-layers/actions/workflows/ci.yml/badge.svg" alt="Build status"/>
