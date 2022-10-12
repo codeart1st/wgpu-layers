@@ -22,7 +22,7 @@
 # Build the project
 
 ```sh
-wasm-pack build --all-features --target web --dev
+wasm-pack build --release --all-features --target web
 ```
 
 # Run a native example
@@ -40,5 +40,5 @@ LIBGL_ALWAYS_SOFTWARE=true WGPU_BACKEND=gl cargo test --target `rustc -vV | sed 
 
 WASM Browser Integration tests
 ```sh
-wasm-pack test --chrome --all-features --test '*'
+wasm-pack test --chrome --release --all-features --test '*'
 ```
