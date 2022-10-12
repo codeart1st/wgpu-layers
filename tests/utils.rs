@@ -1,5 +1,6 @@
 #![allow(unused_attributes)]
 #![feature(thread_local)]
+#![cfg(target_arch = "wasm32")]
 
 use log::info;
 use std::cell::RefCell;
