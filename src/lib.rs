@@ -25,6 +25,7 @@ pub struct Instance {
 }
 
 pub struct Mapped {
+  #[allow(dead_code)]
   mapped: bool,
 }
 
@@ -122,34 +123,30 @@ pub async fn add_pbf_tile_data(pbf: Vec<u8>, _tile_coord: Vec<u32>, extent: Vec<
     .position(|layer_name| layer_name == "land");
 
   if let Ok(instance) = INSTANCE.try_lock() {
-    match layer_index_option {
-      Some(layer_index) => match parser.get_features(layer_index) {
-        Some(mut parsed_features) => {
-          if parsed_features.is_empty() {
-            return;
-          }
-          match &instance.renderer {
-            Some(renderer_cell) => {
-              let mut renderer = renderer_cell.borrow_mut();
-              let mut bucket = renderer.create_bucket();
-              bucket.add_features(&mut parsed_features);
-              bucket.set_extent(extent);
-
-              if let Ok(mut mapped) = MAPPED.lock() {
-                if !mapped.mapped {
-                  mapped.mapped = true;
-                  renderer.compute().await;
-                }
-              }
-
-              instance.buckets.borrow_mut().push(bucket);
-            }
-            None => (),
-          }
+    if let Some(layer_index) = layer_index_option {
+      if let Some(mut parsed_features) = parser.get_features(layer_index) {
+        if parsed_features.is_empty() {
+          return;
         }
-        None => (),
-      },
-      None => (),
+        match &instance.renderer {
+          Some(renderer_cell) => {
+            let renderer = renderer_cell.borrow();
+            let mut bucket = renderer.create_bucket();
+            bucket.add_features(&mut parsed_features);
+            bucket.set_extent(extent);
+
+            /*if let Ok(mut mapped) = MAPPED.lock() {
+              if !mapped.mapped {
+                mapped.mapped = true;
+                renderer.compute().await;
+              }
+            }*/
+
+            instance.buckets.borrow_mut().push(bucket);
+          }
+          None => (),
+        }
+      }
     }
   }
 }

@@ -1,4 +1,5 @@
 #![feature(thread_local)]
+#![allow(clippy::await_holding_refcell_ref)]
 #![cfg(target_arch = "wasm32")]
 
 mod utils;
