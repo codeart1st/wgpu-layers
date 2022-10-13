@@ -55,7 +55,8 @@ jobs:
       run: wasm-pack build --release --target web
 
     - name: Check wasm artifact size
-      run: [[ $(stat -c %s pkg/wgpu_layers_bg.wasm) -lt 256000 ]]
+      run: |
+        [[ $(stat -c %s pkg/wgpu_layers_bg.wasm) -lt 256000 ]]
 
   unit-test:
     timeout-minutes: 30
