@@ -26,7 +26,8 @@ fn create_map_window() -> (winit::event_loop::EventLoop<()>, MapWindow) {
   let size = winit::dpi::PhysicalSize::new(512, 512);
   let window_builder = winit::window::WindowBuilder::new()
     .with_title("wgpu-map")
-    .with_transparent(true)
+    //.with_transparent(true)
+    .with_resizable(false)
     .with_min_inner_size(size)
     .with_max_inner_size(size)
     .with_inner_size(size);
@@ -91,7 +92,16 @@ async fn start(
       event: winit::event::WindowEvent::Resized(_),
       ..
     } => {}
-    winit::event::Event::MainEventsCleared => {}
+    winit::event::Event::MainEventsCleared => {
+      #[rustfmt::skip]
+      let view_matrix = vec![
+        1.15142285e-7, -0.0, 0.0, 0.0,
+        0.0, 1.15142285e-7, 0.0, 0.0,
+        -0.27666306, -0.7963807, 1.0, 0.0,
+        0.0, 0.0, 0.0, 1.0,
+      ];
+      wgpu_layers::render(view_matrix, vec![size.width, size.height]);
+    }
     _ => (),
   });
 }

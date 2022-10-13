@@ -28,17 +28,25 @@ wasm-pack build --release --all-features --target web
 # Run a native example
 
 ```sh
-WINIT_UNIX_BACKEND=x11 cargo run --example window --target `rustc -vV | sed -n 's|host: ||p'`
+cargo run --example window --target `rustc -vV | sed -n 's|host: ||p'`
 ```
 
 # Run tests
 
 Native unit tests
 ```sh
-LIBGL_ALWAYS_SOFTWARE=true WGPU_BACKEND=gl cargo test --target `rustc -vV | sed -n 's|host: ||p'` -- --nocapture
+LIBGL_ALWAYS_SOFTWARE=true cargo test --target `rustc -vV | sed -n 's|host: ||p'` -- --nocapture
 ```
 
 WASM Browser Integration tests
 ```sh
 wasm-pack test --chrome --release --all-features --test '*'
 ```
+
+# Useful environment variables
+
+| Name                  | Example |
+| --------------------- | ------- |
+| WGPU_BACKEND          | gl      |
+| LIBGL_ALWAYS_SOFTWARE | true    |
+| WINIT_UNIX_BACKEND    | x11     |

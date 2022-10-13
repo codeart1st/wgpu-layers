@@ -7,6 +7,9 @@ use crate::{
   view::View,
 };
 
+const PREFERRED_TEXTURE_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Bgra8Unorm;
+const PREFERRED_ALPHA_MODE: wgpu::CompositeAlphaMode = wgpu::CompositeAlphaMode::PreMultiplied;
+
 pub struct Renderer {
   /// wgpu device queue pair
   pub device_queue: (Arc<wgpu::Device>, Arc<wgpu::Queue>),
@@ -43,7 +46,8 @@ pub trait ToSurface {
 
 impl Renderer {
   pub async fn new<W: ToSurface>(window: &W, (width, height): (u32, u32)) -> Self {
-    let instance = wgpu::Instance::new(wgpu::Backends::all());
+    let instance =
+      wgpu::Instance::new(wgpu::util::backend_bits_from_env().unwrap_or(wgpu::Backends::all()));
 
     let surface;
     unsafe {
@@ -54,7 +58,8 @@ impl Renderer {
 
     let adapter = instance
       .request_adapter(&wgpu::RequestAdapterOptions {
-        power_preference: wgpu::PowerPreference::HighPerformance,
+        power_preference: wgpu::util::power_preference_from_env()
+          .unwrap_or(wgpu::PowerPreference::HighPerformance),
         force_fallback_adapter: false,
         compatible_surface: Some(&surface),
       })
@@ -80,7 +85,6 @@ impl Renderer {
     let device = Arc::new(device);
     let queue = Arc::new(queue);
 
-    let preferred_format = wgpu::TextureFormat::Bgra8Unorm;
     let supported_formats = surface.get_supported_formats(&adapter);
 
     info!(
@@ -88,12 +92,22 @@ impl Renderer {
       surface.get_supported_formats(&adapter)
     );
 
-    let texture_format = if supported_formats.contains(&preferred_format) {
-      preferred_format
+    let texture_format = if supported_formats.contains(&PREFERRED_TEXTURE_FORMAT) {
+      PREFERRED_TEXTURE_FORMAT
     } else {
       supported_formats
         .first()
         .expect("Can't get texture format for surface.")
+        .to_owned()
+    };
+
+    let supported_alpha_modes = surface.get_supported_alpha_modes(&adapter);
+    let alpha_mode = if supported_alpha_modes.contains(&PREFERRED_ALPHA_MODE) {
+      PREFERRED_ALPHA_MODE
+    } else {
+      supported_alpha_modes
+        .first()
+        .expect("Can't get present mode for surface.")
         .to_owned()
     };
 
@@ -103,7 +117,7 @@ impl Renderer {
       width,
       height,
       present_mode: wgpu::PresentMode::Fifo,
-      alpha_mode: wgpu::CompositeAlphaMode::PreMultiplied,
+      alpha_mode,
     };
 
     surface.configure(&device, &surface_config);
