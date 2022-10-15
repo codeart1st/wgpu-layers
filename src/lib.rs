@@ -1,3 +1,7 @@
+#![allow(incomplete_features)]
+#![feature(adt_const_params)]
+
+use bucket::{AcceptExtent, AcceptFeatures, Bucket, BucketType};
 use lazy_static::lazy_static;
 use std::{
   cell::{Cell, RefCell},
@@ -12,6 +16,7 @@ use wasm_bindgen::prelude::*;
 mod bucket;
 mod parser;
 pub mod renderer;
+mod ressource;
 mod view;
 
 type GeometryFeature = bucket::feature::Feature<GeometryCollection<f32>>;
@@ -131,8 +136,23 @@ pub async fn add_pbf_tile_data(pbf: Vec<u8>, _tile_coord: Vec<u32>, extent: Vec<
         match &instance.renderer {
           Some(renderer_cell) => {
             let renderer = renderer_cell.borrow();
-            let mut bucket = renderer.create_bucket();
-            bucket.add_features(&mut parsed_features);
+            let mut bucket = renderer.create_bucket(BucketType::Fill);
+            // TODO: maybe use a helper function
+            match bucket.get_bucket_type() {
+              BucketType::Fill => {
+                <Bucket<_> as AcceptFeatures<_, { BucketType::Fill }>>::add_features(
+                  &mut bucket,
+                  &mut parsed_features,
+                );
+              }
+              BucketType::Line => {
+                <Bucket<_> as AcceptFeatures<_, { BucketType::Line }>>::add_features(
+                  &mut bucket,
+                  &mut parsed_features,
+                );
+              }
+            }
+
             bucket.set_extent(extent);
 
             /*if let Ok(mut mapped) = MAPPED.lock() {

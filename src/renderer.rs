@@ -3,7 +3,8 @@ use std::{fmt::Debug, sync::Arc};
 use log::info;
 
 use crate::{
-  bucket::{line_tessellation::LineTessellation, Bucket},
+  bucket::{line_tessellation::LineTessellation, AcceptFeatures, Bucket, BucketType},
+  ressource::RessourceManager,
   view::View,
 };
 
@@ -28,6 +29,8 @@ pub struct Renderer {
 
   /// wgpu surfaceconfiguration
   surface_config: wgpu::SurfaceConfiguration,
+
+  ressource_manager: RessourceManager,
 }
 
 pub trait ToSurface {
@@ -124,6 +127,8 @@ impl Renderer {
 
     let line_tessellation = LineTessellation::new((device.clone(), queue.clone()));
 
+    let ressource_manager = RessourceManager::new(device.clone(), texture_format);
+
     Self {
       device_queue: (device, queue),
       texture_format,
@@ -131,12 +136,17 @@ impl Renderer {
       line_tessellation,
       surface,
       surface_config,
+      ressource_manager,
     }
   }
 
-  pub fn create_bucket<T>(&self) -> Bucket<T> {
+  pub fn create_bucket<F>(&self, bucket_type: BucketType) -> Bucket<F> {
     let (device, _) = &self.device_queue;
-    Bucket::new(device.clone(), &self.texture_format, &self.view)
+    <Bucket<F> as AcceptFeatures<F, { BucketType::Fill }>>::new(
+      device.clone(),
+      &self.texture_format,
+      &self.view,
+    )
   }
 
   pub fn set_size(&mut self, (width, height): (u32, u32)) {
