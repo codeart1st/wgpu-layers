@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::HashMap, sync::Arc};
+use std::{borrow::Cow, collections::HashMap, sync::Arc, cell::RefCell};
 
 use material::{Material, MaterialManager, MaterialType};
 use wgpu::util::DeviceExt;
@@ -24,7 +24,7 @@ pub struct RessourceManager {
 
   texture_format: wgpu::TextureFormat,
 
-  material_manager: Option<MaterialManager>,
+  material_manager: Option<RefCell<MaterialManager>>,
 
   bind_group_layouts: HashMap<RessourceScope, wgpu::BindGroupLayout>,
 
@@ -40,7 +40,7 @@ impl RessourceManager {
       bind_group_layouts: HashMap::new(),
       shader_modules: HashMap::new(),
     };
-    manager.material_manager = Some(MaterialManager::new(&mut manager));
+    manager.material_manager = Some(RefCell::new(MaterialManager::new(&mut manager)));
     manager
   }
 
@@ -120,6 +120,7 @@ impl RessourceManager {
       .material_manager
       .as_ref()
       .unwrap()
+      .borrow_mut()
       .get(self, material_type)
   }
 }

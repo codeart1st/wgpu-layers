@@ -17,7 +17,7 @@ lazy_static = "1.4.0"
 geo-types = "0.7.7"
 bytemuck = "1.12.1"
 bytemuck_derive = "1.2.1"
-earcutr = "0.2.0"
+earcutr = "0.3.0"
 prost = { version = "0.11.0", default-features = false, features = ["prost-derive"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
@@ -38,7 +38,7 @@ web-sys = { version = "0.3.60", features = [
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 pollster = "0.2.5"
 env_logger = "0.9.1"
-winit = "0.27.3"
+winit = "0.27.4"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.33"

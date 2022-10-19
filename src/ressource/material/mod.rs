@@ -39,7 +39,7 @@ pub trait CreatePipeline<const T: MaterialType>
 where
   Self: Sized,
 {
-  fn new(ressource_manager: &RessourceManager, material_manager: &MaterialManager) -> Self;
+  fn new(ressource_manager: &RessourceManager, shader_module: &wgpu::ShaderModule) -> Self;
 }
 
 pub struct MaterialManager {
@@ -78,16 +78,8 @@ impl MaterialManager {
     }
   }
 
-  fn create_bind_group(
-    &self,
-    ressource_manager: &RessourceManager,
-    entries: &[wgpu::BindGroupEntry],
-  ) -> wgpu::BindGroup {
-    ressource_manager.create_bind_group(&RessourceScope::Material, entries)
-  }
-
   pub fn get(
-    &self,
+    &mut self,
     ressource_manager: &RessourceManager,
     material_type: MaterialType,
   ) -> Arc<Material> {
@@ -97,10 +89,10 @@ impl MaterialManager {
         .entry(material_type.clone())
         .or_insert(match material_type {
           MaterialType::Fill => Arc::new(
-            <Material as CreatePipeline<{ MaterialType::Line }>>::new(ressource_manager, self),
+            <Material as CreatePipeline<{ MaterialType::Line }>>::new(ressource_manager, &self.shader_module),
           ),
           MaterialType::Line => Arc::new(
-            <Material as CreatePipeline<{ MaterialType::Line }>>::new(ressource_manager, self),
+            <Material as CreatePipeline<{ MaterialType::Line }>>::new(ressource_manager, &self.shader_module),
           ),
         });
     material.clone()

@@ -140,7 +140,7 @@ impl Renderer {
     }
   }
 
-  pub fn create_bucket<F>(&self, bucket_type: BucketType) -> Bucket<F> {
+  pub fn create_bucket<F>(&self, _bucket_type: BucketType) -> Bucket<F> {
     let (device, _) = &self.device_queue;
     <Bucket<F> as AcceptFeatures<F, { BucketType::Fill }>>::new(
       device.clone(),

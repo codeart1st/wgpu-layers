@@ -1,11 +1,11 @@
-use crate::ressource::RessourceManager;
+use crate::ressource::{RessourceManager, RessourceScope};
 
-use super::{CreatePipeline, Material, MaterialManager, MaterialType, Style};
+use super::{CreatePipeline, Material, MaterialType, Style};
 
 impl CreatePipeline<{ MaterialType::Line }> for Material {
-  fn new(ressource_manager: &RessourceManager, material_manager: &MaterialManager) -> Self {
+  fn new(ressource_manager: &RessourceManager, shader_module: &wgpu::ShaderModule) -> Self {
     let vertex_state = wgpu::VertexState {
-      module: &material_manager.shader_module,
+      module: shader_module,
       entry_point: "vs_stroke",
       buffers: &[wgpu::VertexBufferLayout {
         array_stride: 8,
@@ -25,7 +25,7 @@ impl CreatePipeline<{ MaterialType::Line }> for Material {
       }],
     };
     let fragment_state = wgpu::FragmentState {
-      module: &material_manager.shader_module,
+      module: shader_module,
       entry_point: "fs_fill",
       targets: &[Some(wgpu::ColorTargetState {
         format: ressource_manager.texture_format,
@@ -45,8 +45,7 @@ impl CreatePipeline<{ MaterialType::Line }> for Material {
       contents: bytemuck::cast_slice(&[style]),
       usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
     });
-    let bind_group = material_manager.create_bind_group(
-      ressource_manager,
+    let bind_group = ressource_manager.create_bind_group(&RessourceScope::Material,
       &[wgpu::BindGroupEntry {
         binding: 1,
         resource: style_buffer.as_entire_binding(),
