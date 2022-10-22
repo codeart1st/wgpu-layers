@@ -22,7 +22,7 @@ pub struct LineTessellation {
 }
 
 impl LineTessellation {
-  pub fn new((device, queue): (Arc<wgpu::Device>, Arc<wgpu::Queue>)) -> LineTessellation {
+  pub fn new((device, queue): (Arc<wgpu::Device>, Arc<wgpu::Queue>)) -> Self {
     let shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
       label: None,
       source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!(
@@ -89,7 +89,7 @@ impl LineTessellation {
       module: &shader_module,
     });
 
-    LineTessellation {
+    Self {
       device_queue: (device, queue),
       pipeline,
       bind_group_layout,
