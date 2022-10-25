@@ -4,9 +4,7 @@ on:
   schedule:
     - cron: "0 7 * * 1"
   push:
-    branches: [ "main" ]
   pull_request:
-    branches: [ "main" ]
 
 env:
   CARGO_TERM_COLOR: always
@@ -21,38 +19,38 @@ jobs:
     continue-on-error: true
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout repository and submodules
-      uses: actions/checkout@v3.1.0
-      with:
-        submodules: recursive
+      - name: Checkout repository and submodules
+        uses: actions/checkout@v3.1.0
+        with:
+          submodules: recursive
 
-    - name: Prepare build environemnt
-      uses: ./.github/actions/prepare-build-env
+      - name: Prepare build environemnt
+        uses: ./.github/actions/prepare-build-env
 
-    - name: Run cargo clippy
-      run: |
-        cargo clippy --target wasm32-unknown-unknown \
-          --tests --all-features -- --deny "warnings"
-      #TODO: this should be integrated for PR builds
-      #uses: actions-rs/clippy-check@v1.0.7
-      #with:
-      #  token: ${{ secrets.GITHUB_TOKEN }}
-      #  args: --target wasm32-unknown-unknown --tests --all-features
+      - name: Run cargo clippy
+        run: |
+          cargo clippy --target wasm32-unknown-unknown \
+            --tests --all-features -- --deny "warnings"
+        #TODO: this should be integrated for PR builds
+        #uses: actions-rs/clippy-check@v1.0.7
+        #with:
+        #  token: ${{ secrets.GITHUB_TOKEN }}
+        #  args: --target wasm32-unknown-unknown --tests --all-features
 
   build:
     timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout repository and submodules
-      uses: actions/checkout@v3.1.0
-      with:
-        submodules: recursive
+      - name: Checkout repository and submodules
+        uses: actions/checkout@v3.1.0
+        with:
+          submodules: recursive
 
-    - name: Prepare build environemnt
-      uses: ./.github/actions/prepare-build-env
+      - name: Prepare build environemnt
+        uses: ./.github/actions/prepare-build-env
 
-    - name: Run wasm-pack build
-      run: wasm-pack build --release --target web
+      - name: Run wasm-pack build
+        run: wasm-pack build --release --target web
 
     - name: Check wasm artifact size
       run: |
@@ -62,20 +60,20 @@ jobs:
     timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout repository and submodules
-      uses: actions/checkout@v3.1.0
-      with:
-        submodules: recursive
+      - name: Checkout repository and submodules
+        uses: actions/checkout@v3.1.0
+        with:
+          submodules: recursive
 
-    - name: Prepare build environemnt
-      uses: ./.github/actions/prepare-build-env
+      - name: Prepare build environemnt
+        uses: ./.github/actions/prepare-build-env
 
-    - name: Use libegl-mesa0 latest
-      uses: ./.github/actions/install-graphics-driver
+      - name: Use libegl-mesa0 latest
+        uses: ./.github/actions/install-graphics-driver
 
-    - name: Run cargo test
-      run: |
-        cargo test --target `rustc -vV | sed -n 's|host: ||p'` -- --nocapture
+      - name: Run cargo test
+        run: |
+          cargo test --target `rustc -vV | sed -n 's|host: ||p'` -- --nocapture
 
   integration-test:
     timeout-minutes: 30
@@ -83,27 +81,27 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-    #    browser: [chrome, firefox]
+        #    browser: [chrome, firefox]
         browser: [chrome]
     steps:
-    - name: Checkout repository and submodules
-      uses: actions/checkout@v3.1.0
-      with:
-        submodules: recursive
+      - name: Checkout repository and submodules
+        uses: actions/checkout@v3.1.0
+        with:
+          submodules: recursive
 
-    - name: Prepare build environemnt
-      uses: ./.github/actions/prepare-build-env
+      - name: Prepare build environemnt
+        uses: ./.github/actions/prepare-build-env
 
-    - name: Use libegl-mesa0 latest
-      uses: ./.github/actions/install-graphics-driver
+      - name: Use libegl-mesa0 latest
+        uses: ./.github/actions/install-graphics-driver
 
-    #- name: Use firefox nightly
-    #  if: matrix.browser == 'firefox'
-    #  run: |
-    #    sudo add-apt-repository ppa:ubuntu-mozilla-daily/ppa
-    #    sudo apt-get update
-    #    sudo apt-get install firefox-trunk
+      #- name: Use firefox nightly
+      #  if: matrix.browser == 'firefox'
+      #  run: |
+      #    sudo add-apt-repository ppa:ubuntu-mozilla-daily/ppa
+      #    sudo apt-get update
+      #    sudo apt-get install firefox-trunk
 
-    #- run: /usr/bin/firefox-trunk -version
-    - name: Run wasm-pack test
-      run: wasm-pack test --${{ matrix.browser }} --headless --release --all-features --test '*'
+      #- run: /usr/bin/firefox-trunk -version
+      - name: Run wasm-pack test
+        run: wasm-pack test --${{ matrix.browser }} --headless --release --all-features --test '*'
