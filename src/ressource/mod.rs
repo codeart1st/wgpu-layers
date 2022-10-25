@@ -1,16 +1,24 @@
-use std::{borrow::Cow, collections::HashMap, sync::Arc, cell::RefCell};
+use std::{
+  borrow::Cow,
+  cell::RefCell,
+  collections::{BTreeMap, HashMap},
+  sync::Arc,
+};
 
 use material::{Material, MaterialManager, MaterialType};
 use wgpu::util::DeviceExt;
 
-mod material;
+use self::tile::{Bucket, BucketType, Tile, TileManager};
 
-#[derive(Eq, Hash, PartialEq)]
-pub(self) enum RessourceScope {
-  World,
-  Camera,
-  Model,
-  Material,
+mod material;
+pub mod tile;
+pub mod view;
+
+#[derive(Eq, Hash, PartialEq, PartialOrd, Ord, Debug)]
+pub(self) enum BindGroupScope {
+  Global = 0,
+  Material = 1,
+  Model = 2,
 }
 
 #[derive(Eq, Hash, PartialEq)]
@@ -26,7 +34,9 @@ pub struct RessourceManager {
 
   material_manager: Option<RefCell<MaterialManager>>,
 
-  bind_group_layouts: HashMap<RessourceScope, wgpu::BindGroupLayout>,
+  tile_manager: Option<RefCell<TileManager>>,
+
+  bind_group_layouts: BTreeMap<BindGroupScope, wgpu::BindGroupLayout>,
 
   shader_modules: HashMap<ShaderModuleScope, Arc<wgpu::ShaderModule>>,
 }
@@ -37,10 +47,12 @@ impl RessourceManager {
       device,
       texture_format,
       material_manager: None,
-      bind_group_layouts: HashMap::new(),
+      tile_manager: None,
+      bind_group_layouts: BTreeMap::new(),
       shader_modules: HashMap::new(),
     };
     manager.material_manager = Some(RefCell::new(MaterialManager::new(&mut manager)));
+    manager.tile_manager = Some(RefCell::new(TileManager::new(&mut manager)));
     manager
   }
 
@@ -64,7 +76,7 @@ impl RessourceManager {
 
   pub(self) fn create_bind_group(
     &self,
-    scope: &RessourceScope,
+    scope: &BindGroupScope,
     entries: &[wgpu::BindGroupEntry],
   ) -> wgpu::BindGroup {
     self.device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -84,7 +96,7 @@ impl RessourceManager {
     fragment_state: wgpu::FragmentState,
   ) -> wgpu::RenderPipeline {
     let bind_group_layouts: Vec<&wgpu::BindGroupLayout> =
-      self.bind_group_layouts.values().collect();
+      self.bind_group_layouts.values().into_iter().collect();
     let pipeline_layout = self
       .device
       .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -108,11 +120,18 @@ impl RessourceManager {
 
   pub(self) fn register_bind_group_layout(
     &mut self,
-    scope: RessourceScope,
+    scope: BindGroupScope,
     desc: &wgpu::BindGroupLayoutDescriptor,
   ) {
     let bind_group_layout = self.device.create_bind_group_layout(desc);
     self.bind_group_layouts.insert(scope, bind_group_layout);
+  }
+
+  pub fn create_tile<F>(&self, bucket_type: BucketType, extent: [f32; 4], tile_size: f32) -> Tile {
+    match bucket_type {
+      BucketType::Fill => Bucket::<F, { BucketType::Fill }>::new(self, extent, tile_size),
+      BucketType::Line => Bucket::<F, { BucketType::Line }>::new(self, extent, tile_size),
+    }
   }
 
   fn get_material(&self, material_type: MaterialType) -> Arc<Material> {

@@ -26,7 +26,7 @@ impl LineTessellation {
     let shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
       label: None,
       source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!(
-        "shader/line_tessellation.wgsl"
+        "shader/line.wgsl"
       ))),
     });
 

@@ -1,4 +1,4 @@
-use crate::ressource::{RessourceManager, RessourceScope};
+use crate::ressource::{BindGroupScope, RessourceManager};
 
 use super::{CreatePipeline, Material, MaterialType, Style};
 
@@ -36,11 +36,12 @@ impl CreatePipeline<{ MaterialType::Fill }> for Material {
     let style_buffer = ressource_manager.create_buffer_init(&wgpu::util::BufferInitDescriptor {
       label: None,
       contents: bytemuck::cast_slice(&[style]),
-      usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+      usage: wgpu::BufferUsages::UNIFORM,
     });
-    let bind_group = ressource_manager.create_bind_group(&RessourceScope::Material,
+    let bind_group = ressource_manager.create_bind_group(
+      &BindGroupScope::Material,
       &[wgpu::BindGroupEntry {
-        binding: 1,
+        binding: 0,
         resource: style_buffer.as_entire_binding(),
       }],
     );

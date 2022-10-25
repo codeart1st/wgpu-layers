@@ -2,7 +2,7 @@ use geo_types::{Coordinate, GeometryCollection, LineString, Point, Polygon};
 use log::warn;
 use prost::Message;
 
-use crate::bucket::feature::Feature;
+use crate::feature::Feature;
 
 mod vector_tile {
   #![allow(clippy::derive_partial_eq_without_eq)]

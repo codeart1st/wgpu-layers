@@ -1,6 +1,6 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, mem::size_of, num::NonZeroU64, sync::Arc};
 
-use super::{RessourceManager, RessourceScope, ShaderModuleScope};
+use super::{BindGroupScope, RessourceManager, ShaderModuleScope};
 
 mod fill;
 mod line;
@@ -35,6 +35,13 @@ pub struct Material {
   material_type: MaterialType,
 }
 
+impl Material {
+  pub fn set<'frame>(&'frame self, render_pass: &mut wgpu::RenderPass<'frame>) {
+    render_pass.set_pipeline(&self.pipeline);
+    render_pass.set_bind_group(BindGroupScope::Material as u32, &self.bind_group, &[]);
+  }
+}
+
 pub trait CreatePipeline<const T: MaterialType>
 where
   Self: Sized,
@@ -56,16 +63,18 @@ impl MaterialManager {
     );
 
     ressource_manager.register_bind_group_layout(
-      RessourceScope::Material,
+      BindGroupScope::Material,
       &wgpu::BindGroupLayoutDescriptor {
         label: None,
         entries: &[wgpu::BindGroupLayoutEntry {
-          binding: 1,
+          binding: 0,
           visibility: wgpu::ShaderStages::FRAGMENT,
           ty: wgpu::BindingType::Buffer {
             ty: wgpu::BufferBindingType::Uniform,
             has_dynamic_offset: false,
-            min_binding_size: None,
+            min_binding_size: Some(
+              NonZeroU64::new(size_of::<Style>().try_into().unwrap()).unwrap(),
+            ),
           },
           count: None,
         }],
@@ -83,18 +92,19 @@ impl MaterialManager {
     ressource_manager: &RessourceManager,
     material_type: MaterialType,
   ) -> Arc<Material> {
-    let material =
-      self
-        .materials
-        .entry(material_type.clone())
-        .or_insert(match material_type {
-          MaterialType::Fill => Arc::new(
-            <Material as CreatePipeline<{ MaterialType::Line }>>::new(ressource_manager, &self.shader_module),
-          ),
-          MaterialType::Line => Arc::new(
-            <Material as CreatePipeline<{ MaterialType::Line }>>::new(ressource_manager, &self.shader_module),
-          ),
-        });
+    let material = self
+      .materials
+      .entry(material_type.clone())
+      .or_insert(match material_type {
+        MaterialType::Fill => Arc::new(<Material as CreatePipeline<{ MaterialType::Fill }>>::new(
+          ressource_manager,
+          &self.shader_module,
+        )),
+        MaterialType::Line => Arc::new(<Material as CreatePipeline<{ MaterialType::Line }>>::new(
+          ressource_manager,
+          &self.shader_module,
+        )),
+      });
     material.clone()
   }
 }

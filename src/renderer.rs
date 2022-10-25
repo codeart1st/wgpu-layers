@@ -1,11 +1,14 @@
-use std::{fmt::Debug, sync::Arc};
+use std::sync::Arc;
 
 use log::info;
 
 use crate::{
-  bucket::{line_tessellation::LineTessellation, AcceptFeatures, Bucket, BucketType},
-  ressource::RessourceManager,
-  view::View,
+  ressource::{
+    tile::{BucketType, Tile},
+    view::View,
+    RessourceManager,
+  },
+  tessellation::LineTessellation,
 };
 
 const PREFERRED_TEXTURE_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Bgra8Unorm;
@@ -30,7 +33,7 @@ pub struct Renderer {
   /// wgpu surfaceconfiguration
   surface_config: wgpu::SurfaceConfiguration,
 
-  ressource_manager: RessourceManager,
+  pub ressource_manager: RessourceManager,
 }
 
 pub trait ToSurface {
@@ -90,10 +93,7 @@ impl Renderer {
 
     let supported_formats = surface.get_supported_formats(&adapter);
 
-    info!(
-      "supported surface formats: {:?}",
-      surface.get_supported_formats(&adapter)
-    );
+    info!("supported surface formats: {:?}", supported_formats);
 
     let texture_format = if supported_formats.contains(&PREFERRED_TEXTURE_FORMAT) {
       PREFERRED_TEXTURE_FORMAT
@@ -105,6 +105,9 @@ impl Renderer {
     };
 
     let supported_alpha_modes = surface.get_supported_alpha_modes(&adapter);
+
+    info!("supported alpha modes: {:?}", supported_alpha_modes);
+
     let alpha_mode = if supported_alpha_modes.contains(&PREFERRED_ALPHA_MODE) {
       PREFERRED_ALPHA_MODE
     } else {
@@ -120,19 +123,19 @@ impl Renderer {
       width,
       height,
       present_mode: wgpu::PresentMode::Fifo,
-      alpha_mode,
+      alpha_mode: wgpu::CompositeAlphaMode::PreMultiplied,
     };
 
     surface.configure(&device, &surface_config);
 
     let line_tessellation = LineTessellation::new((device.clone(), queue.clone()));
 
-    let ressource_manager = RessourceManager::new(device.clone(), texture_format);
+    let mut ressource_manager = RessourceManager::new(device.clone(), texture_format);
 
     Self {
       device_queue: (device, queue),
       texture_format,
-      view: View::new((width, height)),
+      view: View::new((width, height), &mut ressource_manager),
       line_tessellation,
       surface,
       surface_config,
@@ -140,13 +143,10 @@ impl Renderer {
     }
   }
 
-  pub fn create_bucket<F>(&self, _bucket_type: BucketType) -> Bucket<F> {
-    let (device, _) = &self.device_queue;
-    <Bucket<F> as AcceptFeatures<F, { BucketType::Fill }>>::new(
-      device.clone(),
-      &self.texture_format,
-      &self.view,
-    )
+  pub fn create_tile<F>(&self, bucket_type: BucketType, extent: [f32; 4], tile_size: f32) -> Tile {
+    self
+      .ressource_manager
+      .create_tile::<F>(bucket_type, extent, tile_size)
   }
 
   pub fn set_size(&mut self, (width, height): (u32, u32)) {
@@ -168,7 +168,7 @@ impl Renderer {
       .await;
   }
 
-  pub fn render<T: Debug>(&self, buckets: &[Bucket<T>]) {
+  pub fn render(&self, tiles: &[Tile]) {
     let (device, queue) = &self.device_queue;
     let mut command_encoder =
       device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
@@ -202,8 +202,8 @@ impl Renderer {
       });
     } // out of scope
 
-    for bucket in buckets.iter() {
-      let mut pass = command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+    {
+      let mut render_pass = command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
         label: None,
         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
           view: &view,
@@ -216,7 +216,12 @@ impl Renderer {
         depth_stencil_attachment: None,
       });
 
-      bucket.render(&mut pass, queue, &self.view);
+      self.view.set(&mut render_pass, queue);
+
+      // FIXME: set material / shader here. group by material in bucket
+      for tile in tiles.iter() {
+        tile.render(&mut render_pass, queue, &self.view);
+      }
     }
 
     queue.submit(Some(command_encoder.finish()));

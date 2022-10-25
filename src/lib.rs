@@ -1,31 +1,29 @@
 #![allow(incomplete_features)]
 #![feature(adt_const_params)]
 
-use bucket::{AcceptExtent, AcceptFeatures, Bucket, BucketType};
+use feature::Feature;
 use lazy_static::lazy_static;
+use ressource::tile::{Bucket, BucketType, Tile};
 use std::{
   cell::{Cell, RefCell},
   sync::Mutex,
 };
 
-use geo_types::GeometryCollection;
-
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
-mod bucket;
+mod feature;
 mod parser;
 pub mod renderer;
 mod ressource;
-mod view;
+mod tessellation;
 
-type GeometryFeature = bucket::feature::Feature<GeometryCollection<f32>>;
-type BucketVec = Vec<bucket::Bucket<GeometryFeature>>;
+const TILE_SIZE: f32 = 4096.0;
 
 #[derive(Default)]
 pub struct Instance {
   renderer: Option<RefCell<renderer::Renderer>>,
-  buckets: RefCell<BucketVec>,
+  tiles: RefCell<Vec<Tile>>,
   current_size: Cell<(u32, u32)>,
 }
 
@@ -100,7 +98,7 @@ pub fn render(view_matrix: Vec<f32>, new_size: Vec<u32>) {
             view_matrix_array[i][j] = *view_matrix.get(i * 4 + j).expect("view matrix is wrong");
           }
         }
-        renderer.view.view_matrix = view_matrix_array;
+        renderer.view.set_view_matrix(view_matrix_array);
 
         let current_size = instance.current_size.get();
         if current_size.0 != new_size[0] || current_size.1 != new_size[1] {
@@ -108,7 +106,7 @@ pub fn render(view_matrix: Vec<f32>, new_size: Vec<u32>) {
           renderer.set_size(instance.current_size.get());
         }
 
-        renderer.render(&instance.buckets.borrow());
+        renderer.render(&instance.tiles.borrow());
       }
       None => (),
     }
@@ -136,24 +134,30 @@ pub async fn add_pbf_tile_data(pbf: Vec<u8>, _tile_coord: Vec<u32>, extent: Vec<
         match &instance.renderer {
           Some(renderer_cell) => {
             let renderer = renderer_cell.borrow();
-            let mut bucket = renderer.create_bucket(BucketType::Fill);
-            // TODO: maybe use a helper function
-            match bucket.get_bucket_type() {
+            let mut tile = renderer.create_tile::<Feature<geo_types::GeometryCollection<f32>>>(
+              BucketType::Fill,
+              extent.try_into().unwrap(),
+              TILE_SIZE,
+            );
+
+            match tile.get_bucket_type() {
               BucketType::Fill => {
-                <Bucket<_> as AcceptFeatures<_, { BucketType::Fill }>>::add_features(
-                  &mut bucket,
-                  &mut parsed_features,
+                <Tile as Bucket<
+                  Feature<geo_types::GeometryCollection<f32>>,
+                  { BucketType::Fill },
+                >>::add_features(
+                  &mut tile, &mut parsed_features, &renderer.ressource_manager
                 );
               }
               BucketType::Line => {
-                <Bucket<_> as AcceptFeatures<_, { BucketType::Line }>>::add_features(
-                  &mut bucket,
-                  &mut parsed_features,
+                <Tile as Bucket<
+                  Feature<geo_types::GeometryCollection<f32>>,
+                  { BucketType::Line },
+                >>::add_features(
+                  &mut tile, &mut parsed_features, &renderer.ressource_manager
                 );
               }
             }
-
-            bucket.set_extent(extent);
 
             /*if let Ok(mut mapped) = MAPPED.lock() {
               if !mapped.mapped {
@@ -162,7 +166,7 @@ pub async fn add_pbf_tile_data(pbf: Vec<u8>, _tile_coord: Vec<u32>, extent: Vec<
               }
             }*/
 
-            instance.buckets.borrow_mut().push(bucket);
+            instance.tiles.borrow_mut().push(tile);
           }
           None => (),
         }
@@ -176,7 +180,7 @@ pub async fn init<W: renderer::ToSurface>(window: &W, size: (u32, u32)) {
 
   if let Ok(mut instance) = INSTANCE.lock() {
     instance.renderer = Some(renderer);
-    instance.buckets.replace(Vec::new());
+    instance.tiles.replace(Vec::new());
     instance.current_size = Cell::new(size);
   }
 }

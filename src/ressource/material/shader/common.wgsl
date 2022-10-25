@@ -1,8 +1,12 @@
-struct Transforms {
-  view_matrix: mat4x4<f32>,
-  model_matrix: mat4x4<f32>,
+struct Tile {
   model_view_matrix: mat4x4<f32>,
   clipping_rect: vec4<f32>,
+}
+
+struct View {
+  view_matrix: mat4x4<f32>,
+  width: u32,
+  height: u32
 }
 
 struct Style {
@@ -26,25 +30,26 @@ struct FragmentInput {
   @location(0) @interpolate(linear, center) normal: vec2<f32>,
 }
 
-// use different bind groups for different scopes
-// e.g. bind_group 0 for world metadata and bind_group 1 for object metadata
 @group(0) @binding(0)
-var<uniform> transforms: Transforms;
+var<uniform> view: View;
 
-@group(3) @binding(1)
+@group(1) @binding(0)
 var<uniform> style: Style;
+
+@group(2) @binding(0)
+var<uniform> tile: Tile;
 
 @vertex
 fn vs_fill(
   @location(0) pos: vec2<f32>
 ) -> @builtin(position) vec4<f32> {
-  return transforms.model_view_matrix * vec4<f32>(pos, 0.0, 1.0);
+  return tile.model_view_matrix * vec4<f32>(pos, 0.0, 1.0);
 }
 
 @vertex
 fn vs_stroke(vertex: VertexInput) -> FragmentInput {
   var delta = vec2<f32>(vertex.normal * style.stroke_width);
-  var position = transforms.model_view_matrix * vec4<f32>(vertex.position + delta, 0.0, 1.0);
+  var position = tile.model_view_matrix * vec4<f32>(vertex.position + delta, 0.0, 1.0);
   return FragmentInput(position, vertex.normal);
 }
 
@@ -53,10 +58,10 @@ fn clipping_and_premul_alpha(position: vec4<f32>, input_color: vec4<f32>) -> Fra
   var fragment_output = FragmentOutput(color, 0xFFFFFFFFu);
 
   if (
-    position.x < transforms.clipping_rect[0] ||
-    position.y < transforms.clipping_rect[1] ||
-    position.x > transforms.clipping_rect[2] ||
-    position.y > transforms.clipping_rect[3]
+    position.x < tile.clipping_rect[0] ||
+    position.y < tile.clipping_rect[1] ||
+    position.x > tile.clipping_rect[2] ||
+    position.y > tile.clipping_rect[3]
   ) {
     fragment_output.mask_out = 0u;
   }
