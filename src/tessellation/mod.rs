@@ -4,7 +4,7 @@ use wgpu::util::DeviceExt;
 static WORK_GROUP_MAX_X: f32 = 256.0;
 
 #[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck_derive::Pod, bytemuck_derive::Zeroable)]
+#[derive(Copy, Clone, bytemuck_derive::Pod, bytemuck_derive::Zeroable)]
 struct OutputVertex {
   position: [f32; 2],
   normal: [f32; 2],

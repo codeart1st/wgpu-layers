@@ -11,14 +11,14 @@ mod line;
 
 const TILE_SIZE: f32 = 4096.0;
 
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Eq, Clone)]
 pub enum BucketType {
   Fill,
   Line,
 }
 
 #[repr(C)]
-#[derive(Default, Debug, Copy, Clone, bytemuck_derive::Pod, bytemuck_derive::Zeroable)]
+#[derive(Default, Copy, Clone, bytemuck_derive::Pod, bytemuck_derive::Zeroable)]
 struct TileUniform {
   model_view_matrix: [[f32; 4]; 4],
   clipping_rect: [f32; 4],
@@ -26,7 +26,6 @@ struct TileUniform {
 
 pub struct TileManager;
 
-#[derive(Debug)]
 pub struct Tile {
   material: Arc<Material>,
 
@@ -162,7 +161,7 @@ pub trait Bucket<F, const T: BucketType>
 where
   Self: Sized,
 {
-  fn new(ressource_manager: &RessourceManager, extent: [f32; 4], tile_size: f32) -> Self;
+  fn new(ressource_manager: &RessourceManager, extent: [f32; 4]) -> Self;
 
   fn add_features(&mut self, features: &mut Vec<F>, ressource_manager: &RessourceManager)
   where

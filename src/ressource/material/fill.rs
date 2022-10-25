@@ -49,7 +49,6 @@ impl CreatePipeline<{ MaterialType::Fill }> for Material {
     Self {
       pipeline,
       bind_group,
-      material_type: MaterialType::Fill,
     }
   }
 }

@@ -6,7 +6,7 @@ mod fill;
 mod line;
 
 #[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck_derive::Pod, bytemuck_derive::Zeroable)]
+#[derive(Copy, Clone, bytemuck_derive::Pod, bytemuck_derive::Zeroable)]
 struct Style {
   /// fill color
   fill_color: [f32; 4],
@@ -18,21 +18,18 @@ struct Style {
   stroke_width: f32,
 }
 
-#[derive(PartialEq, Eq, Hash, Debug, Clone)]
+#[derive(PartialEq, Eq, Hash, Clone)]
 pub enum MaterialType {
   Fill,
   Line,
 }
 
-#[derive(Debug)]
 pub struct Material {
   /// wgpu pipeline
   pipeline: wgpu::RenderPipeline,
 
   /// wgpu bind group
   bind_group: wgpu::BindGroup,
-
-  material_type: MaterialType,
 }
 
 impl Material {

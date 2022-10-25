@@ -108,7 +108,7 @@ impl Renderer {
 
     info!("supported alpha modes: {:?}", supported_alpha_modes);
 
-    let alpha_mode = if supported_alpha_modes.contains(&PREFERRED_ALPHA_MODE) {
+    let _alpha_mode = if supported_alpha_modes.contains(&PREFERRED_ALPHA_MODE) {
       PREFERRED_ALPHA_MODE
     } else {
       supported_alpha_modes
@@ -143,10 +143,8 @@ impl Renderer {
     }
   }
 
-  pub fn create_tile<F>(&self, bucket_type: BucketType, extent: [f32; 4], tile_size: f32) -> Tile {
-    self
-      .ressource_manager
-      .create_tile::<F>(bucket_type, extent, tile_size)
+  pub fn create_tile<F>(&self, bucket_type: BucketType, extent: [f32; 4]) -> Tile {
+    self.ressource_manager.create_tile::<F>(bucket_type, extent)
   }
 
   pub fn set_size(&mut self, (width, height): (u32, u32)) {

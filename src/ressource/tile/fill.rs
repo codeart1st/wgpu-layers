@@ -11,7 +11,7 @@ use super::{Bucket, BucketType, Tile, TileUniform};
 const DIMENSIONS: usize = 2;
 
 impl<F> Bucket<F, { BucketType::Fill }> for Tile {
-  fn new(ressource_manager: &RessourceManager, extent: [f32; 4], tile_size: f32) -> Self {
+  fn new(ressource_manager: &RessourceManager, extent: [f32; 4]) -> Self {
     let tile_uniform = TileUniform::default();
     let tile_uniform_buffer =
       ressource_manager.create_buffer_init(&wgpu::util::BufferInitDescriptor {

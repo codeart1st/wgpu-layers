@@ -18,8 +18,6 @@ pub mod renderer;
 mod ressource;
 mod tessellation;
 
-const TILE_SIZE: f32 = 4096.0;
-
 #[derive(Default)]
 pub struct Instance {
   renderer: Option<RefCell<renderer::Renderer>>,
@@ -137,7 +135,6 @@ pub async fn add_pbf_tile_data(pbf: Vec<u8>, _tile_coord: Vec<u32>, extent: Vec<
             let mut tile = renderer.create_tile::<Feature<geo_types::GeometryCollection<f32>>>(
               BucketType::Fill,
               extent.try_into().unwrap(),
-              TILE_SIZE,
             );
 
             match tile.get_bucket_type() {

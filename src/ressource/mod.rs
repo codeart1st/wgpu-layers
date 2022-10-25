@@ -14,7 +14,7 @@ mod material;
 pub mod tile;
 pub mod view;
 
-#[derive(Eq, Hash, PartialEq, PartialOrd, Ord, Debug)]
+#[derive(Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub(self) enum BindGroupScope {
   Global = 0,
   Material = 1,
@@ -36,6 +36,7 @@ pub struct RessourceManager {
 
   tile_manager: Option<RefCell<TileManager>>,
 
+  // TODO: remove BTreeMap because of size
   bind_group_layouts: BTreeMap<BindGroupScope, wgpu::BindGroupLayout>,
 
   shader_modules: HashMap<ShaderModuleScope, Arc<wgpu::ShaderModule>>,
@@ -127,10 +128,10 @@ impl RessourceManager {
     self.bind_group_layouts.insert(scope, bind_group_layout);
   }
 
-  pub fn create_tile<F>(&self, bucket_type: BucketType, extent: [f32; 4], tile_size: f32) -> Tile {
+  pub fn create_tile<F>(&self, bucket_type: BucketType, extent: [f32; 4]) -> Tile {
     match bucket_type {
-      BucketType::Fill => Bucket::<F, { BucketType::Fill }>::new(self, extent, tile_size),
-      BucketType::Line => Bucket::<F, { BucketType::Line }>::new(self, extent, tile_size),
+      BucketType::Fill => Bucket::<F, { BucketType::Fill }>::new(self, extent),
+      BucketType::Line => Bucket::<F, { BucketType::Line }>::new(self, extent),
     }
   }
 
