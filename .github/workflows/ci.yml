@@ -54,8 +54,10 @@ jobs:
 
       - name: Check wasm artifact size
         run: |
+          apt-get install brotli
+          brotli -Z pkg/wgpu_layers_bg.wasm
           gzip -k pkg/wgpu_layers_bg.wasm
-          [[ $(stat -c %s pkg/wgpu_layers_bg.wasm.gz) -lt 128000 ]]
+          [[ $(stat -c %s pkg/wgpu_layers_bg.wasm.br) -lt 100000 ]]
 
   unit-test:
     timeout-minutes: 30
