@@ -52,9 +52,15 @@ jobs:
       - name: Run wasm-pack build
         run: wasm-pack build --release --target web
 
+      # no benefit currently in size. after compression the file gets bigger
+      #- name: Run wasm-opt optimization
+      #  run: |
+      #    wget https://github.com/WebAssembly/binaryen/releases/download/version_110/binaryen-version_110-x86_64-linux.tar.gz
+      #    tar zxf binaryen-version_110-x86_64-linux.tar.gz
+      #    ./binaryen-version_110/bin/wasm-opt -Os -o pkg/wgpu_layers_bg.wasm pkg/wgpu_layers_bg.wasm
+
       - name: Check wasm artifact size
         run: |
-          apt-get install brotli
           brotli -Z pkg/wgpu_layers_bg.wasm
           gzip -k pkg/wgpu_layers_bg.wasm
           [[ $(stat -c %s pkg/wgpu_layers_bg.wasm.br) -lt 100000 ]]

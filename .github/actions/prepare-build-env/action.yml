@@ -11,6 +11,10 @@ runs:
       shell: bash
       run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
+    - name: Use brotli latest
+      shell: bash
+      run: sudo apt-get install -y brotli
+
     - name: Cache rust-toolchain (shared)
       id: rustup-cache
       uses: actions/cache@v3.0.10
