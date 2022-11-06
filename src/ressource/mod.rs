@@ -1,9 +1,4 @@
-use std::{
-  borrow::Cow,
-  cell::RefCell,
-  collections::{BTreeMap, HashMap},
-  sync::Arc,
-};
+use std::{borrow::Cow, cell::RefCell, collections::HashMap, sync::Arc};
 
 use material::{Material, MaterialManager, MaterialType};
 use wgpu::util::DeviceExt;
@@ -14,11 +9,21 @@ mod material;
 pub mod tile;
 pub mod view;
 
-#[derive(Eq, Hash, PartialEq, PartialOrd, Ord)]
+#[derive(Eq, Hash, PartialEq)]
 pub(self) enum BindGroupScope {
   Global = 0,
   Material = 1,
   Model = 2,
+}
+
+impl BindGroupScope {
+  pub fn value(&self) -> usize {
+    match self {
+      BindGroupScope::Global => BindGroupScope::Global as usize,
+      BindGroupScope::Material => BindGroupScope::Material as usize,
+      BindGroupScope::Model => BindGroupScope::Model as usize,
+    }
+  }
 }
 
 #[derive(Eq, Hash, PartialEq)]
@@ -36,20 +41,28 @@ pub struct RessourceManager {
 
   tile_manager: Option<RefCell<TileManager>>,
 
-  // TODO: remove BTreeMap because of size
-  bind_group_layouts: BTreeMap<BindGroupScope, wgpu::BindGroupLayout>,
+  bind_group_layouts: [wgpu::BindGroupLayout; 3],
 
   shader_modules: HashMap<ShaderModuleScope, Arc<wgpu::ShaderModule>>,
 }
 
 impl RessourceManager {
   pub fn new(device: Arc<wgpu::Device>, texture_format: wgpu::TextureFormat) -> Self {
+    let empty_desc = &wgpu::BindGroupLayoutDescriptor {
+      label: None,
+      entries: &[],
+    };
+    let bind_group_layouts = [
+      device.create_bind_group_layout(empty_desc),
+      device.create_bind_group_layout(empty_desc),
+      device.create_bind_group_layout(empty_desc),
+    ];
     let mut manager = Self {
       device,
       texture_format,
       material_manager: None,
       tile_manager: None,
-      bind_group_layouts: BTreeMap::new(),
+      bind_group_layouts,
       shader_modules: HashMap::new(),
     };
     manager.material_manager = Some(RefCell::new(MaterialManager::new(&mut manager)));
@@ -82,7 +95,7 @@ impl RessourceManager {
   ) -> wgpu::BindGroup {
     self.device.create_bind_group(&wgpu::BindGroupDescriptor {
       label: None,
-      layout: self.bind_group_layouts.get(scope).unwrap(),
+      layout: &self.bind_group_layouts[scope.value()],
       entries,
     })
   }
@@ -96,13 +109,15 @@ impl RessourceManager {
     vertex_state: wgpu::VertexState,
     fragment_state: wgpu::FragmentState,
   ) -> wgpu::RenderPipeline {
-    let bind_group_layouts: Vec<&wgpu::BindGroupLayout> =
-      self.bind_group_layouts.values().into_iter().collect();
     let pipeline_layout = self
       .device
       .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: None,
-        bind_group_layouts: &bind_group_layouts[..],
+        bind_group_layouts: &[
+          &self.bind_group_layouts[0],
+          &self.bind_group_layouts[1],
+          &self.bind_group_layouts[2],
+        ],
         push_constant_ranges: &[],
       });
     self
@@ -124,8 +139,7 @@ impl RessourceManager {
     scope: BindGroupScope,
     desc: &wgpu::BindGroupLayoutDescriptor,
   ) {
-    let bind_group_layout = self.device.create_bind_group_layout(desc);
-    self.bind_group_layouts.insert(scope, bind_group_layout);
+    self.bind_group_layouts[scope.value()] = self.device.create_bind_group_layout(desc);
   }
 
   pub fn create_tile<F>(&self, bucket_type: BucketType, extent: [f32; 4]) -> Tile {
