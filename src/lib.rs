@@ -133,14 +133,14 @@ fn process_tile_parser_queue() {
           }
 
           if let Ok(instance) = INSTANCE.try_lock() {
-            {
+            /*{
               let renderer = instance.renderer.as_ref().unwrap().clone();
               wasm_bindgen_futures::spawn_local(async move {
                 if let Ok(mut renderer) = renderer.try_lock() {
                   renderer.compute().await;
                 };
               });
-            }
+            }*/
             let renderer = instance.renderer.as_ref().unwrap().clone();
             if let Ok(renderer) = renderer.try_lock() {
               let mut tile = renderer.create_tile::<Feature<geo_types::GeometryCollection<f32>>>(
