@@ -54,7 +54,7 @@ jobs:
 
       - name: Check wasm artifact size
         run: |
-          gzip -k wgpu_layers_bg.wasm
+          gzip -k pkg/wgpu_layers_bg.wasm
           [[ $(stat -c %s pkg/wgpu_layers_bg.wasm.gz) -lt 128000 ]]
 
   unit-test:
