@@ -3,16 +3,11 @@
 
 use feature::Feature;
 use geo_types::GeometryCollection;
-use lazy_static::lazy_static;
 use log::{error, info};
 use ressource::tile::{Bucket, BucketType, Tile};
+use std::cell::{Cell, RefCell};
 use std::sync::mpsc::TryRecvError::{Disconnected, Empty};
 use std::sync::mpsc::{channel, Receiver, Sender};
-use std::sync::Arc;
-use std::{
-  cell::{Cell, RefCell},
-  sync::Mutex,
-};
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
@@ -25,18 +20,9 @@ mod tessellation;
 
 #[derive(Default)]
 pub struct Instance {
-  renderer: Option<Arc<Mutex<renderer::Renderer>>>,
+  renderer: RefCell<Option<renderer::Renderer>>,
   tiles: RefCell<Vec<Tile>>,
   current_size: Cell<(u32, u32)>,
-}
-
-pub struct Mapped {
-  #[allow(dead_code)]
-  mapped: bool,
-}
-
-lazy_static! {
-  static ref INSTANCE: Mutex<Instance> = Mutex::new(Instance::default());
 }
 
 struct Message {
@@ -46,6 +32,7 @@ struct Message {
 
 thread_local! {
   static TILE_PARSER_QUEUE: (Sender<Message>, Receiver<Message>) = channel();
+  static INSTANCE: Instance = Instance::default();
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -99,28 +86,27 @@ pub mod wasm {
 pub fn render(view_matrix: Vec<f32>, new_size: Vec<u32>) {
   process_tile_parser_queue();
 
-  if let Ok(instance) = INSTANCE.try_lock() {
-    let renderer = instance.renderer.as_ref().unwrap();
-    if let Ok(mut renderer) = renderer.try_lock() {
-      let mut view_matrix_array = [[0.0; 4]; 4];
+  INSTANCE.with(|instance| {
+    let mut borrowed_renderer = instance.renderer.borrow_mut();
+    let renderer = borrowed_renderer.as_mut().unwrap();
+    let mut view_matrix_array = [[0.0; 4]; 4];
 
-      #[allow(clippy::needless_range_loop)]
-      for i in 0..4 {
-        for j in 0..4 {
-          view_matrix_array[i][j] = *view_matrix.get(i * 4 + j).expect("view matrix is wrong");
-        }
+    #[allow(clippy::needless_range_loop)]
+    for i in 0..4 {
+      for j in 0..4 {
+        view_matrix_array[i][j] = *view_matrix.get(i * 4 + j).expect("view matrix is wrong");
       }
-      renderer.view.set_view_matrix(view_matrix_array);
-
-      let current_size = instance.current_size.get();
-      if current_size.0 != new_size[0] || current_size.1 != new_size[1] {
-        instance.current_size.set((new_size[0], new_size[1]));
-        renderer.set_size(instance.current_size.get());
-      }
-
-      renderer.render(&instance.tiles.borrow());
     }
-  }
+    renderer.view.set_view_matrix(view_matrix_array);
+
+    let current_size = instance.current_size.get();
+    if current_size.0 != new_size[0] || current_size.1 != new_size[1] {
+      instance.current_size.set((new_size[0], new_size[1]));
+      renderer.set_size(instance.current_size.get());
+    }
+
+    renderer.render(&instance.tiles.borrow());
+  });
 }
 
 fn process_tile_parser_queue() {
@@ -132,7 +118,7 @@ fn process_tile_parser_queue() {
             return;
           }
 
-          if let Ok(instance) = INSTANCE.try_lock() {
+          INSTANCE.with(|instance| {
             /*{
               let renderer = instance.renderer.as_ref().unwrap().clone();
               wasm_bindgen_futures::spawn_local(async move {
@@ -141,35 +127,34 @@ fn process_tile_parser_queue() {
                 };
               });
             }*/
-            let renderer = instance.renderer.as_ref().unwrap().clone();
-            if let Ok(renderer) = renderer.try_lock() {
-              let mut tile = renderer.create_tile::<Feature<geo_types::GeometryCollection<f32>>>(
-                BucketType::Fill,
-                msg.extent.try_into().unwrap(),
-              );
+            let borrowed_renderer = instance.renderer.borrow();
+            let renderer = borrowed_renderer.as_ref().unwrap();
+            let mut tile = renderer.create_tile::<Feature<geo_types::GeometryCollection<f32>>>(
+              BucketType::Fill,
+              msg.extent.try_into().unwrap(),
+            );
 
-              match tile.get_bucket_type() {
-                BucketType::Fill => {
-                  <Tile as Bucket<
-                    Feature<geo_types::GeometryCollection<f32>>,
-                    { BucketType::Fill },
-                  >>::add_features(
-                    &mut tile, &mut parsed_features, &renderer.ressource_manager
-                  );
-                }
-                BucketType::Line => {
-                  <Tile as Bucket<
-                    Feature<geo_types::GeometryCollection<f32>>,
-                    { BucketType::Line },
-                  >>::add_features(
-                    &mut tile, &mut parsed_features, &renderer.ressource_manager
-                  );
-                }
+            match tile.get_bucket_type() {
+              BucketType::Fill => {
+                <Tile as Bucket<
+                  Feature<geo_types::GeometryCollection<f32>>,
+                  { BucketType::Fill },
+                >>::add_features(
+                  &mut tile, &mut parsed_features, &renderer.ressource_manager
+                );
               }
+              BucketType::Line => {
+                <Tile as Bucket<
+                  Feature<geo_types::GeometryCollection<f32>>,
+                  { BucketType::Line },
+                >>::add_features(
+                  &mut tile, &mut parsed_features, &renderer.ressource_manager
+                );
+              }
+            }
 
-              instance.tiles.borrow_mut().push(tile);
-            };
-          }
+            instance.tiles.borrow_mut().push(tile);
+          });
         }
       }
       Err(err) => match err {
@@ -212,11 +197,11 @@ pub async fn add_pbf_tile_data(pbf: Vec<u8>, _tile_coord: Vec<u32>, extent: Vec<
 }
 
 pub async fn init<W: renderer::ToSurface>(window: &W, size: (u32, u32)) {
-  let renderer = Arc::new(Mutex::new(renderer::Renderer::new(window, size).await));
+  let renderer = renderer::Renderer::new(window, size).await;
 
-  if let Ok(mut instance) = INSTANCE.lock() {
-    instance.renderer = Some(renderer);
+  INSTANCE.with(|instance| {
+    instance.renderer.replace(Some(renderer));
     instance.tiles.replace(Vec::new());
-    instance.current_size = Cell::new(size);
-  }
+    instance.current_size.replace(size);
+  });
 }

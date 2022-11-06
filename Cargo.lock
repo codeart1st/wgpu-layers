@@ -2021,7 +2021,6 @@ dependencies = [
  "geo-types",
  "include-base64",
  "js-sys",
- "lazy_static",
  "log",
  "pollster",
  "prost",
