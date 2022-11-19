@@ -77,8 +77,8 @@ jobs:
       - name: Prepare build environemnt
         uses: ./.github/actions/prepare-build-env
 
-      #- name: Use libegl-mesa0 latest
-      #  uses: ./.github/actions/install-graphics-driver
+      - name: Use libegl1-mesa latest
+        uses: ./.github/actions/install-graphics-driver
 
       - name: Run cargo test
         run: |
