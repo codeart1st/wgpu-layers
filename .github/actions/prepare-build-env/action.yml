@@ -17,7 +17,7 @@ runs:
 
     - name: Cache rust-toolchain (shared)
       id: rustup-cache
-      uses: actions/cache@v3.0.10
+      uses: actions/cache@v3.0.11
       with:
         path: |
           ~/.rustup/toolchains
@@ -37,7 +37,7 @@ runs:
         echo "::set-output name=version::$(rustc --version | cut -d ' ' -f 2)"
 
     - name: Cache cargo output (job)
-      uses: pat-s/always-upload-cache@v3.0.1 # https://github.com/actions/cache/issues/92
+      uses: pat-s/always-upload-cache@v3.0.11 # https://github.com/actions/cache/issues/92
       with:
         key: ${{ runner.os }}-${{ steps.rustup.outputs.version }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ github.job }}-1
         path: |
