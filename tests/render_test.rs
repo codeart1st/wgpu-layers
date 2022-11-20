@@ -4,7 +4,6 @@
 
 mod utils;
 
-use wasm_bindgen::prelude::*;
 use wasm_bindgen_test::*;
 
 use utils::*;
