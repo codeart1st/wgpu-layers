@@ -40,7 +40,7 @@ LIBGL_ALWAYS_SOFTWARE=true cargo test --target `rustc -vV | sed -n 's|host: ||p'
 
 WASM Browser Integration tests
 ```sh
-wasm-pack test --chrome --release --test '*'
+wasm-pack test --chrome --release --features console_log,console_error_panic_hook --test '*'
 ```
 
 # Useful environment variables

@@ -4,6 +4,7 @@
 
 mod utils;
 
+use wasm_bindgen::prelude::*;
 use wasm_bindgen_test::*;
 
 use utils::*;
@@ -26,6 +27,8 @@ async fn osm_pbf() {
   .await;
 
   // act
+  wgpu_layers::render(get_view_matrix(), vec![CANVAS_SIZE.0, CANVAS_SIZE.1]);
+  timeout(10).await; // wait for compute shader
   wgpu_layers::render(get_view_matrix(), vec![CANVAS_SIZE.0, CANVAS_SIZE.1]);
 
   // assert

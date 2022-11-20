@@ -60,11 +60,9 @@ pub fn initialize() {
 
 pub async fn canvas_as_data_url(canvas: &HtmlCanvasElement) -> JsValue {
   let promise = js_sys::Promise::new(&mut move |resolve, _| {
-    let cb = Closure::wrap(Box::new(move |blob| {
-      let args = js_sys::Array::new();
-      args.set(0, JsValue::from(blob));
-      resolve.apply(&JsValue::NULL, &args).unwrap();
-    }) as Box<dyn Fn(web_sys::Blob)>);
+    let cb: Closure<dyn Fn(web_sys::Blob)> = Closure::wrap(Box::new(move |blob| {
+      resolve.call1(&JsValue::NULL, &JsValue::from(blob)).unwrap();
+    }));
     canvas.to_blob(cb.as_ref().unchecked_ref()).unwrap();
     cb.forget(); // leaking
   });
@@ -76,13 +74,11 @@ pub async fn canvas_as_data_url(canvas: &HtmlCanvasElement) -> JsValue {
     let file_reader = std::rc::Rc::new(web_sys::FileReader::new().unwrap());
     let file_reader_cb = file_reader.clone();
 
-    let cb = Closure::wrap(Box::new(move |event| {
-      let args = js_sys::Array::new();
+    let cb: Closure<dyn Fn(web_sys::Blob)> = Closure::wrap(Box::new(move |event| {
       info!("{:?}", event);
       let data_url = file_reader_cb.result().unwrap();
-      args.set(0, data_url);
-      resolve.apply(&JsValue::NULL, &args).unwrap();
-    }) as Box<dyn Fn(web_sys::Blob)>);
+      resolve.call1(&JsValue::NULL, &data_url).unwrap();
+    }));
 
     file_reader.set_onload(Some(cb.as_ref().unchecked_ref()));
     file_reader.read_as_data_url(&blob).unwrap();
@@ -90,6 +86,20 @@ pub async fn canvas_as_data_url(canvas: &HtmlCanvasElement) -> JsValue {
     cb.forget(); // leaking
   });
   JsFuture::from(promise).await.unwrap()
+}
+
+pub async fn timeout(timeout: i32) {
+  let promise = js_sys::Promise::new(&mut move |resolve, _| {
+    let cb: Closure<dyn Fn()> = Closure::wrap(Box::new(move || {
+      resolve.call0(&JsValue::NULL).unwrap();
+    }));
+    web_sys::window()
+      .unwrap()
+      .set_timeout_with_callback_and_timeout_and_arguments_0(cb.as_ref().unchecked_ref(), timeout)
+      .unwrap();
+    cb.forget(); // leaking
+  });
+  JsFuture::from(promise).await.unwrap();
 }
 
 #[rustfmt::skip]

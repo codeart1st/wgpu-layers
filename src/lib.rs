@@ -164,7 +164,6 @@ where
       }
     }
   }
-  info!("{:?}", all_indices);
   (all_vertices, all_indices)
 }
 
