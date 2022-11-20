@@ -1,5 +1,3 @@
-use log::info;
-
 use crate::ressource::{BindGroupScope, RessourceManager};
 
 use super::{CreatePipeline, Material, MaterialType, Style};

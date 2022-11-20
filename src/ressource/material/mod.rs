@@ -1,7 +1,5 @@
 use std::{collections::HashMap, mem::size_of, num::NonZeroU64, sync::Arc};
 
-use log::info;
-
 use super::{BindGroupScope, RessourceManager, ShaderModuleScope};
 
 mod fill;
