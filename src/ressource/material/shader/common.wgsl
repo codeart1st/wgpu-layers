@@ -6,7 +6,7 @@ struct Tile {
 struct View {
   view_matrix: mat4x4<f32>,
   width: u32,
-  height: u32
+  height: u32,
 }
 
 struct Style {
@@ -39,6 +39,8 @@ var<uniform> style: Style;
 @group(2) @binding(0)
 var<uniform> tile: Tile;
 
+const GLOBAL_SCALE: f32 = 0.0032; // can this be calculated?
+
 @vertex
 fn vs_fill(
   @location(0) pos: vec2<f32>
@@ -48,8 +50,8 @@ fn vs_fill(
 
 @vertex
 fn vs_stroke(vertex: VertexInput) -> FragmentInput {
-  var scale = length(tile.model_view_matrix * vec4<f32>(1.0, 0.0, 0.0, 1.0)); // TODO: move to Tile struct
-  var delta = vec2<f32>(vertex.normal * style.stroke_width * scale);
+  var scale = 1.0 / (view.view_matrix[0][0] * f32(view.width));
+  var delta = vec2<f32>(vertex.normal * scale * GLOBAL_SCALE * style.stroke_width);
   var position = tile.model_view_matrix * vec4<f32>(vertex.position + delta, 0.0, 1.0);
   return FragmentInput(position, vertex.normal);
 }

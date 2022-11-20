@@ -24,10 +24,11 @@ impl CreatePipeline<{ MaterialType::Line }> for Material {
     };
     let pipeline = ressource_manager.create_render_pipeline(vertex_state, fragment_state);
 
+    let stroke_width = 2.0;
     let style = Style {
       fill_color: [0.0, 0.0, 0.0, 1.0],
       stroke_color: [0.0, 0.0, 0.0, 1.0],
-      stroke_width: 15.0,
+      stroke_width: stroke_width * 0.5, // multiply by half because of double sided buffer
     };
     let style_buffer = ressource_manager.create_buffer_init(&wgpu::util::BufferInitDescriptor {
       label: None,

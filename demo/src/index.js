@@ -13,6 +13,10 @@ function start() {
     zDirection: 0, // same as TileDebug
     tileLoadFunction: async (tile, src) => {
       const { tileCoord, extent } = tile
+      if (tileCoord[0] != 4) {
+        tile.setFeatures([]) // finish tile loading
+        return
+      }
       const response = await fetch(src)
       const pbf = await response.arrayBuffer()
       await offscreenTileLayer.pushPbfTileData(pbf, tileCoord, extent)

@@ -112,7 +112,7 @@ pub fn render(view_matrix: Vec<f32>, new_size: Vec<u32>) {
   });
 }
 
-fn triangulate<F>(features: &[F]) -> (Vec<f32>, Vec<u32>)
+fn get_buffers<F>(features: &[F]) -> (Vec<f32>, Vec<u32>)
 where
   F: feature::WithGeometry<geo_types::GeometryCollection<f32>>,
 {
@@ -176,7 +176,7 @@ fn process_tile_parser_queue() {
             return;
           }
 
-          let (vertices, indices) = triangulate(&parsed_features[..]);
+          let (vertices, indices) = get_buffers(&parsed_features[..]);
 
           INSTANCE.with(|instance| {
             let extent: [f32; 4] = msg.extent.try_into().unwrap();

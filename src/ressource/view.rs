@@ -10,6 +10,17 @@ const NORMALIZED_MATRIX: [[f32; 4]; 4] = [
   [0.0, 0.0, 0.0, 1.0],
 ];
 
+#[repr(C)]
+#[derive(Default, Copy, Clone, bytemuck_derive::Pod, bytemuck_derive::Zeroable)]
+struct ViewBuffer {
+  /// transformation matrix world-space to view-space
+  view_matrix: [[f32; 4]; 4],
+
+  width: u32,
+
+  height: u32,
+}
+
 pub struct View {
   bind_group: wgpu::BindGroup,
 
@@ -25,19 +36,22 @@ pub struct View {
   /// half height of surface
   half_height: f32,
 
-  /// transformation matrix world-space to view-space
-  view_matrix: [[f32; 4]; 4],
+  view_buffer: ViewBuffer,
 
   view_matrix_buffer: wgpu::Buffer,
 }
 
 impl View {
   pub fn new((width, height): (u32, u32), ressource_manager: &mut RessourceManager) -> Self {
-    let view_matrix = NORMALIZED_MATRIX;
+    let view_matrix = ViewBuffer {
+      view_matrix: NORMALIZED_MATRIX,
+      width,
+      height,
+    };
     let view_matrix_buffer =
       ressource_manager.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: None,
-        contents: bytemuck::cast_slice(&view_matrix),
+        contents: bytemuck::cast_slice(&[view_matrix]),
         usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
       });
 
@@ -52,7 +66,7 @@ impl View {
             ty: wgpu::BufferBindingType::Uniform,
             has_dynamic_offset: false,
             min_binding_size: Some(
-              NonZeroU64::new(size_of::<[[f32; 4]; 4]>().try_into().unwrap()).unwrap(),
+              NonZeroU64::new(size_of::<ViewBuffer>().try_into().unwrap()).unwrap(),
             ),
           },
           count: None,
@@ -74,7 +88,7 @@ impl View {
       height,
       half_width: width as f32 * 0.5,
       half_height: height as f32 * 0.5,
-      view_matrix,
+      view_buffer: view_matrix,
       view_matrix_buffer,
     }
   }
@@ -89,7 +103,7 @@ impl View {
     queue.write_buffer(
       &self.view_matrix_buffer,
       0,
-      bytemuck::cast_slice(&self.view_matrix),
+      bytemuck::cast_slice(&[self.view_buffer]),
     );
   }
 
@@ -98,14 +112,16 @@ impl View {
     self.height = height;
     self.half_width = width as f32 * 0.5;
     self.half_height = height as f32 * 0.5;
+    self.view_buffer.width = width;
+    self.view_buffer.height = height;
   }
 
   pub fn set_view_matrix(&mut self, view_matrix: [[f32; 4]; 4]) {
-    self.view_matrix = view_matrix;
+    self.view_buffer.view_matrix = view_matrix;
   }
 
   pub fn get_view_matrix(&self) -> [[f32; 4]; 4] {
-    self.view_matrix
+    self.view_buffer.view_matrix
   }
 
   pub fn get_size(&self) -> (u32, u32) {
