@@ -48,7 +48,8 @@ fn vs_fill(
 
 @vertex
 fn vs_stroke(vertex: VertexInput) -> FragmentInput {
-  var delta = vec2<f32>(vertex.normal * style.stroke_width);
+  var scale = length(tile.model_view_matrix * vec4<f32>(1.0, 0.0, 0.0, 1.0)); // TODO: move to Tile struct
+  var delta = vec2<f32>(vertex.normal * style.stroke_width * scale);
   var position = tile.model_view_matrix * vec4<f32>(vertex.position + delta, 0.0, 1.0);
   return FragmentInput(position, vertex.normal);
 }

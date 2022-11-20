@@ -99,9 +99,10 @@ impl LineTessellation {
   fn create_buffers(&self, vertices: &[f32], indices: &[u32]) -> [wgpu::Buffer; 4] {
     let (device, _) = &self.device_queue;
 
-    let vertices_count = (indices.len() - 1) * 4; // generate 4 vertices for each edge
-    let line_vertices_buffer_size = (std::mem::size_of::<OutputVertex>() * vertices_count) as u64;
-    let line_indices_buffer_size = (std::mem::size_of::<u32>() * vertices_count) as u64;
+    // generate 4 vertices for each edge and 6 indices for each edge
+    let line_vertices_buffer_size =
+      (std::mem::size_of::<OutputVertex>() * (indices.len()) * 4) as u64;
+    let line_indices_buffer_size = (std::mem::size_of::<u32>() * (indices.len()) * 6) as u64;
 
     [
       device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -170,13 +171,8 @@ impl LineTessellation {
   pub async fn tessellate(
     &self,
     (vertices, indices): (&[f32], &[u32]),
-  ) -> [(wgpu::Buffer, u64); 2] {
-    // FIXME: better return type
+  ) -> (wgpu::Buffer, wgpu::Buffer) {
     let (device, queue) = &self.device_queue;
-
-    let vertices_count = (indices.len() - 1) * 4; // line tessellation: 4 vertex per each edge
-    let line_vertices_buffer_size = (std::mem::size_of::<OutputVertex>() * vertices_count) as u64;
-    let line_indices_buffer_size = (std::mem::size_of::<u32>() * vertices_count) as u64;
 
     #[rustfmt::skip]
     let [
@@ -202,16 +198,13 @@ impl LineTessellation {
       pass.set_pipeline(&self.pipeline);
       pass.set_bind_group(0, &bind_group, &[]);
 
-      let x = ((indices.len() as f32 - 1.0) / WORK_GROUP_MAX_X).ceil() as u32;
+      let x = (indices.len() as f32 / WORK_GROUP_MAX_X).ceil() as u32;
       pass.dispatch_workgroups(x, 1, 1);
     } // out of scope
 
     queue.submit(Some(command_encoder.finish()));
 
-    [
-      (line_vertices_buffer, line_vertices_buffer_size),
-      (line_indices_buffer, line_indices_buffer_size),
-    ]
+    (line_vertices_buffer, line_indices_buffer)
   }
 }
 
@@ -220,6 +213,13 @@ impl LineTessellation {
 mod tests {
   use super::*;
   use log::info;
+
+  #[repr(C)]
+  #[derive(Debug, Default, Copy, Clone, bytemuck_derive::Pod, bytemuck_derive::Zeroable)]
+  struct Vertex {
+    position: [f32; 2],
+    normal: [f32; 2],
+  }
 
   async fn initialize_test() -> (wgpu::Device, wgpu::Queue) {
     env_logger::init_from_env(
@@ -251,11 +251,14 @@ mod tests {
       .unwrap()
   }
 
-  async fn map_and_log_buffer(
+  async fn map_and_log_buffer<F>(
     (device, queue): (Arc<wgpu::Device>, Arc<wgpu::Queue>),
     src_buffer: &wgpu::Buffer,
     src_buffer_size: u64,
-  ) {
+    from_bytes: F,
+  ) where
+    F: Fn(&[u8]),
+  {
     let dest_buffer = device.create_buffer(&wgpu::BufferDescriptor {
       label: None,
       usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
@@ -290,7 +293,7 @@ mod tests {
         Ok(_) => {
           {
             let bytes = buffer_slice.get_mapped_range();
-            info!("{:?}", bytes.to_vec());
+            from_bytes(&bytes[..]);
           } // out of scope
           dest_buffer.unmap();
         }
@@ -307,7 +310,7 @@ mod tests {
     let queue = Arc::new(queue);
 
     let vertices = [0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0];
-    let indices = [0, 1, 2, 3];
+    let indices = [0, 1, 2, 3, 0];
 
     let line_tessellation = Arc::new(LineTessellation::new((device.clone(), queue.clone())));
 
@@ -315,32 +318,58 @@ mod tests {
     let device1 = device.clone();
     let queue1 = queue.clone();
     let handle1 = std::thread::spawn(move || {
-      match pollster::block_on(line_tessellation1.tessellate((&vertices, &indices))) {
-        [(vertices, vertices_size), (indices, indices_size)] => {
-          vertices.size(); // TODO: use instead of vertices_size
-          pollster::block_on(map_and_log_buffer(
-            (device1.clone(), queue1.clone()),
-            &vertices,
-            vertices_size,
-          ));
-          pollster::block_on(map_and_log_buffer(
-            (device1, queue1),
-            &indices,
-            indices_size,
-          ));
-        }
+      let (vertices, indices) =
+        pollster::block_on(line_tessellation1.tessellate((&vertices, &indices)));
+      {
+        pollster::block_on(map_and_log_buffer(
+          (device1.clone(), queue1.clone()),
+          &vertices,
+          vertices.size(),
+          |bytes| {
+            let size = std::mem::size_of::<Vertex>();
+            for i in (0..16) {
+              let start = i * size;
+              let end = start + size;
+              let output: Vertex = *bytemuck::from_bytes(&bytes[start..end]);
+              info!("{:?}", output);
+            }
+          },
+        ));
+        pollster::block_on(map_and_log_buffer(
+          (device1, queue1),
+          &indices,
+          indices.size(),
+          |bytes| {
+            let size = std::mem::size_of::<u32>();
+            let indices: Vec<u32> = (0..24)
+              .enumerate()
+              .map(|(i, _)| {
+                let start = i * size;
+                let end = start + size;
+                *bytemuck::from_bytes(&bytes[start..end])
+              })
+              .collect();
+            info!("{:?}", indices);
+          },
+        ));
       }
     });
     let handle2 = std::thread::spawn(move || {
-      match pollster::block_on(line_tessellation.tessellate((&vertices, &indices))) {
-        [(vertices, vertices_size), (indices, indices_size)] => {
-          pollster::block_on(map_and_log_buffer(
-            (device.clone(), queue.clone()),
-            &vertices,
-            vertices_size,
-          ));
-          pollster::block_on(map_and_log_buffer((device, queue), &indices, indices_size));
-        }
+      let (vertices, indices) =
+        pollster::block_on(line_tessellation.tessellate((&vertices, &indices)));
+      {
+        pollster::block_on(map_and_log_buffer(
+          (device.clone(), queue.clone()),
+          &vertices,
+          vertices.size(),
+          |_| {},
+        ));
+        pollster::block_on(map_and_log_buffer(
+          (device, queue),
+          &indices,
+          indices.size(),
+          |_| {},
+        ));
       }
     });
 

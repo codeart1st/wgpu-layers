@@ -74,11 +74,11 @@ impl<F> Bucket<F, { BucketType::Fill }> for Tile {
               }
             }
             let indices = earcutr::earcut(&vertices, &hole_indices, DIMENSIONS);
-            let offset = (self.vertex_buffer.len() / DIMENSIONS) as u16;
+            let offset = (self.vertex_buffer.len() / DIMENSIONS) as u32;
             self.vertex_buffer.append(&mut vertices);
             self
               .index_buffer
-              .append(&mut indices.iter().map(|i| (*i as u16) + offset).collect());
+              .append(&mut indices.iter().map(|i| (*i as u32) + offset).collect());
           }
           _ => {
             info!("Geometry type currently not supported");

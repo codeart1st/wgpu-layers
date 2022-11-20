@@ -8,25 +8,14 @@ impl CreatePipeline<{ MaterialType::Line }> for Material {
       module: shader_module,
       entry_point: "vs_stroke",
       buffers: &[wgpu::VertexBufferLayout {
-        array_stride: 8,
+        array_stride: 16,
         step_mode: wgpu::VertexStepMode::Vertex,
-        attributes: &[
-          wgpu::VertexAttribute {
-            format: wgpu::VertexFormat::Float32x2,
-            offset: 0,
-            shader_location: 0,
-          },
-          wgpu::VertexAttribute {
-            format: wgpu::VertexFormat::Float32x2,
-            offset: 0,
-            shader_location: 1,
-          },
-        ],
+        attributes: &wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x2],
       }],
     };
     let fragment_state = wgpu::FragmentState {
       module: shader_module,
-      entry_point: "fs_fill",
+      entry_point: "fs_stroke",
       targets: &[Some(wgpu::ColorTargetState {
         format: ressource_manager.texture_format,
         blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
@@ -36,9 +25,9 @@ impl CreatePipeline<{ MaterialType::Line }> for Material {
     let pipeline = ressource_manager.create_render_pipeline(vertex_state, fragment_state);
 
     let style = Style {
-      fill_color: [0.506, 0.694, 0.31, 1.0],
+      fill_color: [0.0, 0.0, 0.0, 1.0],
       stroke_color: [0.0, 0.0, 0.0, 1.0],
-      stroke_width: 10.0,
+      stroke_width: 15.0,
     };
     let style_buffer = ressource_manager.create_buffer_init(&wgpu::util::BufferInitDescriptor {
       label: None,

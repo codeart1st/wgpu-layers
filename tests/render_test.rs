@@ -10,7 +10,7 @@ use utils::*;
 
 wasm_bindgen_test_configure!(run_in_browser);
 
-/*#[wasm_bindgen_test]
+#[wasm_bindgen_test]
 async fn osm_pbf() {
   initialize();
 
@@ -34,7 +34,7 @@ async fn osm_pbf() {
     "tests/snapshots/render_test_osm_pbf.png"
   ));
   assert_eq!(result.as_string().unwrap(), expect);
-}*/
+}
 
 #[wasm_bindgen_test]
 async fn empty() {

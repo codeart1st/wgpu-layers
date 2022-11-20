@@ -1,3 +1,5 @@
+use log::info;
+
 use crate::ressource::{BindGroupScope, RessourceManager};
 
 use super::{CreatePipeline, Material, MaterialType, Style};
@@ -10,11 +12,7 @@ impl CreatePipeline<{ MaterialType::Fill }> for Material {
       buffers: &[wgpu::VertexBufferLayout {
         array_stride: 8,
         step_mode: wgpu::VertexStepMode::Vertex,
-        attributes: &[wgpu::VertexAttribute {
-          format: wgpu::VertexFormat::Float32x2,
-          offset: 0,
-          shader_location: 0,
-        }],
+        attributes: &wgpu::vertex_attr_array![0 => Float32x2],
       }],
     };
     let fragment_state = wgpu::FragmentState {
@@ -31,7 +29,7 @@ impl CreatePipeline<{ MaterialType::Fill }> for Material {
     let style = Style {
       fill_color: [0.506, 0.694, 0.31, 1.0],
       stroke_color: [0.0, 0.0, 0.0, 1.0],
-      stroke_width: 10.0,
+      stroke_width: 0.0,
     };
     let style_buffer = ressource_manager.create_buffer_init(&wgpu::util::BufferInitDescriptor {
       label: None,

@@ -1,5 +1,7 @@
 use std::{collections::HashMap, mem::size_of, num::NonZeroU64, sync::Arc};
 
+use log::info;
+
 use super::{BindGroupScope, RessourceManager, ShaderModuleScope};
 
 mod fill;
@@ -65,7 +67,7 @@ impl MaterialManager {
         label: None,
         entries: &[wgpu::BindGroupLayoutEntry {
           binding: 0,
-          visibility: wgpu::ShaderStages::FRAGMENT,
+          visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
           ty: wgpu::BindingType::Buffer {
             ty: wgpu::BufferBindingType::Uniform,
             has_dynamic_offset: false,

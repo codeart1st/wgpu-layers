@@ -6,6 +6,7 @@ use geo_types::GeometryCollection;
 use log::{error, info};
 use ressource::tile::{Bucket, BucketType, Tile};
 use std::cell::{Cell, RefCell};
+use std::rc::Rc;
 use std::sync::mpsc::TryRecvError::{Disconnected, Empty};
 use std::sync::mpsc::{channel, Receiver, Sender};
 
@@ -20,8 +21,8 @@ mod tessellation;
 
 #[derive(Default)]
 pub struct Instance {
-  renderer: RefCell<Option<renderer::Renderer>>,
-  tiles: RefCell<Vec<Tile>>,
+  renderer: Rc<RefCell<Option<renderer::Renderer>>>,
+  tiles: Rc<RefCell<Vec<Tile>>>,
   current_size: Cell<(u32, u32)>,
 }
 
@@ -34,6 +35,8 @@ thread_local! {
   static TILE_PARSER_QUEUE: (Sender<Message>, Receiver<Message>) = channel();
   static INSTANCE: Instance = Instance::default();
 }
+
+const DIMENSIONS: usize = 2;
 
 #[cfg(target_arch = "wasm32")]
 pub mod wasm {
@@ -87,8 +90,8 @@ pub fn render(view_matrix: Vec<f32>, new_size: Vec<u32>) {
   process_tile_parser_queue();
 
   INSTANCE.with(|instance| {
-    let mut borrowed_renderer = instance.renderer.borrow_mut();
-    let renderer = borrowed_renderer.as_mut().unwrap();
+    let mut reference = instance.renderer.borrow_mut();
+    let renderer = reference.as_mut().unwrap();
     let mut view_matrix_array = [[0.0; 4]; 4];
 
     #[allow(clippy::needless_range_loop)]
@@ -109,6 +112,62 @@ pub fn render(view_matrix: Vec<f32>, new_size: Vec<u32>) {
   });
 }
 
+fn triangulate<F>(features: &[F]) -> (Vec<f32>, Vec<u32>)
+where
+  F: feature::WithGeometry<geo_types::GeometryCollection<f32>>,
+{
+  let mut all_vertices = vec![];
+  let mut all_indices = vec![];
+  let mut offset = 0;
+  for feature in features.iter() {
+    let geometry_collection = feature.get_geometry();
+    for geometry in geometry_collection.iter() {
+      match geometry {
+        geo_types::Geometry::Polygon(polygon) => {
+          let exterior = polygon.exterior();
+          let interior: &[geo_types::LineString<f32>] = &[]; //TODO: polygon.interiors();
+          let mut vertex_count = exterior.0.len() - 1;
+          let mut rings = Vec::with_capacity(1 + interior.len());
+          rings.push(exterior);
+          interior.iter().for_each(|r| {
+            rings.push(r);
+            // ignore last coordinate (closed ring)
+            vertex_count += r.0.len() - 1;
+          });
+          let mut vertices = Vec::with_capacity(vertex_count * DIMENSIONS);
+          let mut hole_indices = Vec::new();
+          let mut indices = Vec::new();
+          for (i, ring) in rings.iter().enumerate() {
+            // ignore last coordinate (closed ring)
+            let end = ring.0.len() - 1;
+            let coordinate_slice = &ring.0[..end];
+            for (i, coord) in coordinate_slice.iter().enumerate() {
+              vertices.push(coord.x);
+              vertices.push(coord.y);
+              indices.push(i as u32 + offset);
+            }
+
+            indices.push(offset as u32); // close ring
+            indices.push(offset as u32); // separate linestring from the next one
+            offset += coordinate_slice.len() as u32;
+
+            if i < rings.len() - 1 {
+              hole_indices.push(vertices.len())
+            }
+          }
+          all_vertices.append(&mut vertices);
+          all_indices.append(&mut indices);
+        }
+        _ => {
+          info!("Geometry type currently not supported");
+        }
+      }
+    }
+  }
+  info!("{:?}", all_indices);
+  (all_vertices, all_indices)
+}
+
 fn process_tile_parser_queue() {
   TILE_PARSER_QUEUE.with(|(_, receiver)| loop {
     match receiver.try_recv() {
@@ -118,21 +177,35 @@ fn process_tile_parser_queue() {
             return;
           }
 
+          let (vertices, indices) = triangulate(&parsed_features[..]);
+
           INSTANCE.with(|instance| {
-            /*{
-              let renderer = instance.renderer.as_ref().unwrap().clone();
+            let extent: [f32; 4] = msg.extent.try_into().unwrap();
+
+            #[cfg(target_arch = "wasm32")]
+            {
+              let clone = instance.renderer.clone();
+              let tiles = instance.tiles.clone();
+
+              #[allow(clippy::await_holding_refcell_ref)]
               wasm_bindgen_futures::spawn_local(async move {
-                if let Ok(mut renderer) = renderer.try_lock() {
-                  renderer.compute().await;
-                };
+                let mut reference = clone.borrow_mut();
+                let renderer = reference.as_mut().unwrap();
+                let (vertices_buffer, indices_buffer) =
+                  renderer.compute(&vertices[..], &indices[..]).await;
+
+                let mut tile = renderer.create_tile::<Feature<geo_types::GeometryCollection<f32>>>(
+                  BucketType::Line,
+                  extent,
+                );
+                tile.add_buffers(vertices_buffer, indices_buffer);
+                tiles.borrow_mut().push(tile);
               });
-            }*/
-            let borrowed_renderer = instance.renderer.borrow();
-            let renderer = borrowed_renderer.as_ref().unwrap();
-            let mut tile = renderer.create_tile::<Feature<geo_types::GeometryCollection<f32>>>(
-              BucketType::Fill,
-              msg.extent.try_into().unwrap(),
-            );
+            }
+            let mut reference = instance.renderer.try_borrow_mut().unwrap();
+            let renderer = reference.as_mut().unwrap();
+            let mut tile = renderer
+              .create_tile::<Feature<geo_types::GeometryCollection<f32>>>(BucketType::Fill, extent);
 
             match tile.get_bucket_type() {
               BucketType::Fill => {
@@ -143,14 +216,7 @@ fn process_tile_parser_queue() {
                   &mut tile, &mut parsed_features, &renderer.ressource_manager
                 );
               }
-              BucketType::Line => {
-                <Tile as Bucket<
-                  Feature<geo_types::GeometryCollection<f32>>,
-                  { BucketType::Line },
-                >>::add_features(
-                  &mut tile, &mut parsed_features, &renderer.ressource_manager
-                );
-              }
+              BucketType::Line => {}
             }
 
             instance.tiles.borrow_mut().push(tile);
@@ -163,7 +229,6 @@ fn process_tile_parser_queue() {
           break;
         }
         Empty => {
-          info!("no more tiles left");
           break;
         }
       },
@@ -175,7 +240,8 @@ fn process_tile_parser_queue() {
 pub async fn add_pbf_tile_data(pbf: Vec<u8>, _tile_coord: Vec<u32>, extent: Vec<f32>) {
   TILE_PARSER_QUEUE.with(|(sender, _)| {
     let sender = sender.clone();
-    rayon::spawn(move || {
+
+    let parse = move || {
       let parser = parser::Parser::new(pbf).expect("parse error");
 
       let layer_index_option = parser
@@ -190,9 +256,14 @@ pub async fn add_pbf_tile_data(pbf: Vec<u8>, _tile_coord: Vec<u32>, extent: Vec<
             extent,
           })
           .unwrap();
-        info!("parsed");
       }
-    });
+    };
+
+    #[cfg(not(feature = "multithreaded"))]
+    parse();
+
+    #[cfg(feature = "multithreaded")]
+    rayon::spawn(parse);
   });
 }
 

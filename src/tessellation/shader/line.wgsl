@@ -17,12 +17,16 @@ var<storage, read_write> line_indices : array<u32>;
 
 @compute @workgroup_size(256, 1)
 fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
-  if (global_id.x >= arrayLength(&indices) - 1u) {
+  if (global_id.x >= arrayLength(&indices)) {
     return;
   }
 
   let i1 = indices[global_id.x];
   let i2 = indices[global_id.x + 1u];
+
+  if (i1 == i2 || (global_id.x > 0u && indices[global_id.x - 1u] == i1)) { // separate linestring from the next one
+    return;
+  }
 
   let v1 = vertices[i1];
   let v2 = vertices[i2];
@@ -42,8 +46,11 @@ fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
   line_vertices[ii3] = OutputVertex(v2, n1);
   line_vertices[ii4] = OutputVertex(v2, n2);
 
-  line_indices[ii1] = ii1;
-  line_indices[ii2] = ii2;
-  line_indices[ii3] = ii3;
-  line_indices[ii4] = ii4;
+  let offset = global_id.x * 6u;
+  line_indices[offset + 0u] = ii1;
+  line_indices[offset + 1u] = ii2;
+  line_indices[offset + 2u] = ii3;
+  line_indices[offset + 3u] = ii3;
+  line_indices[offset + 4u] = ii2;
+  line_indices[offset + 5u] = ii4;
 }

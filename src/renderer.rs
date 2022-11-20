@@ -156,14 +156,12 @@ impl Renderer {
     self.view.set_size((width, height));
   }
 
-  pub async fn compute(&mut self) {
-    let vertices = [0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0];
-    let indices = [0, 1, 2, 3];
-
-    self
-      .line_tessellation
-      .tessellate((&vertices, &indices))
-      .await;
+  pub async fn compute(
+    &mut self,
+    vertices: &[f32],
+    indices: &[u32],
+  ) -> (wgpu::Buffer, wgpu::Buffer) {
+    self.line_tessellation.tessellate((vertices, indices)).await
   }
 
   pub fn render(&self, tiles: &[Tile]) {

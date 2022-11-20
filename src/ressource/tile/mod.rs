@@ -41,7 +41,7 @@ pub struct Tile {
   /// index buffer
   index_wgpu_buffer: Option<wgpu::Buffer>,
 
-  index_buffer: Vec<u16>,
+  index_buffer: Vec<u32>,
 
   extent: [f32; 4],
 
@@ -49,6 +49,11 @@ pub struct Tile {
 }
 
 impl Tile {
+  pub fn add_buffers(&mut self, vertices_buffer: wgpu::Buffer, indices_buffer: wgpu::Buffer) {
+    self.vertex_wgpu_buffer = Some(vertices_buffer);
+    self.index_wgpu_buffer = Some(indices_buffer);
+  }
+
   pub fn render<'frame>(
     &'frame self,
     render_pass: &mut wgpu::RenderPass<'frame>,
@@ -74,8 +79,9 @@ impl Tile {
         );
 
         render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
-        render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-        render_pass.draw_indexed(0..self.index_buffer.len() as u32, 0, 0..1);
+        render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+        let end = index_buffer.size() as u32 / std::mem::size_of::<u32>() as u32;
+        render_pass.draw_indexed(0..end, 0, 0..1);
       }
       _ => {
         info!("No features found")
