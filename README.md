@@ -25,6 +25,28 @@
 wasm-pack build --release --all-features --target web
 ```
 
+# Next goals
+
+- [x] Fill
+  - [x] Initial support
+- [ ] Line
+  - [x] Initial support
+  - [ ] Anti aliasing
+  - [ ] Line joins
+  - [ ] Line caps
+- [ ] Points
+  - [ ] Initial support
+- [ ] Move polygon triangulation to worker threads
+- [ ] Architecture overhaul
+  - [ ] Combine tiles in buckets with same material
+  - [ ] Split code in smaller chunks
+- [ ] CI
+  - [x] Initial
+  - [ ] Deployment
+  - [ ] Publishing
+- [ ] OpenLayers integration
+  - [ ] Smooth frame sync
+
 # Run a native example
 
 ```sh
