@@ -8,7 +8,9 @@
   "goog:chromeOptions": {
     "args": [
       "--enable-unsafe-webgpu",
-      "--enable-features=UseSkiaRenderer,Vulkan"
+      "--enable-features=UseSkiaRenderer,Vulkan",
+      "--disable-vulkan-surface",
+      "--use-angle=vulkan"
     ]
   }
 }
