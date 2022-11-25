@@ -9,7 +9,10 @@
     "args": [
       "--enable-unsafe-webgpu",
       "--enable-features=UseSkiaRenderer,Vulkan",
+      "--disable-vulkan-fallback-to-gl-for-testing",
       "--disable-vulkan-surface",
+      "--disable-features=VaapiVideoDecoder",
+      "--ignore-gpu-blocklist",
       "--use-angle=vulkan"
     ]
   }
