@@ -50,6 +50,7 @@ fn vs_fill(
 
 @vertex
 fn vs_stroke(vertex: VertexInput) -> FragmentInput {
+  // TODO: precalculate (scale * GLOBAL_SCALE * style.stroke_width) on cpu
   var scale = 1.0 / (view.view_matrix[0][0] * f32(view.width));
   var delta = vec2<f32>(vertex.normal * scale * GLOBAL_SCALE * style.stroke_width);
   var position = tile.model_view_matrix * vec4<f32>(vertex.position + delta, 0.0, 1.0);
@@ -78,6 +79,9 @@ fn fs_fill(@builtin(position) position: vec4<f32>) -> FragmentOutput {
 
 @fragment
 fn fs_stroke(input: FragmentInput) -> FragmentOutput {
-  // TODO: implement feather lines
-  return clipping_and_premul_alpha(input.position, style.stroke_color);
+  var distance = length(input.normal);
+  var blur = 0.8;
+  var alpha = (1.0 - distance) / (blur / style.stroke_width);
+  var color = vec4<f32>(style.stroke_color.rgb, alpha);
+  return clipping_and_premul_alpha(input.position, color);
 }

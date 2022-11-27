@@ -72,3 +72,4 @@ wasm-pack test --chrome --release --features console_log,console_error_panic_hoo
 | WGPU_BACKEND          | gl      |
 | LIBGL_ALWAYS_SOFTWARE | true    |
 | WINIT_UNIX_BACKEND    | x11     |
+| VK_ICD_FILENAMES      | /usr/share/vulkan/icd.d/lvp_icd.x86_64.json |

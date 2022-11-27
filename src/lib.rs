@@ -178,14 +178,13 @@ fn process_tile_parser_queue() {
             return;
           }
 
-          #[cfg(target_arch = "wasm32")]
-          let (vertices, indices) = get_buffers(&parsed_features[..]);
-
           INSTANCE.with(|instance| {
             let extent: [f32; 4] = msg.extent.try_into().unwrap();
 
             #[cfg(target_arch = "wasm32")]
             {
+              let (vertices, indices) = get_buffers(&parsed_features[..]);
+
               let clone = instance.renderer.clone();
               let tiles = instance.tiles.clone();
 
