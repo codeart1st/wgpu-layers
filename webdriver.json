@@ -8,7 +8,7 @@
   "goog:chromeOptions": {
     "args": [
       "--enable-unsafe-webgpu",
-      "--enable-features=UseSkiaRenderer,Vulkan",
+      "--enable-features=Vulkan,VulkanFromANGLE",
       "--disable-vulkan-fallback-to-gl-for-testing",
       "--disable-vulkan-surface",
       "--disable-features=VaapiVideoDecoder",

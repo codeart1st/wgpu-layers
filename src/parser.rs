@@ -1,4 +1,4 @@
-use geo_types::{Coordinate, GeometryCollection, LineString, Point, Polygon};
+use geo_types::{Coord, GeometryCollection, LineString, Point, Polygon};
 use log::warn;
 use prost::Message;
 
@@ -180,7 +180,7 @@ fn parse_geometry(
           }
           _ => (),
         }*/
-        coordinates.push(Coordinate {
+        coordinates.push(Coord {
           x: cursor[0] as f32,
           y: cursor[1] as f32,
         });

@@ -3,7 +3,7 @@
 
 use feature::Feature;
 use geo_types::GeometryCollection;
-use log::{error, info};
+use log::error;
 use ressource::tile::{Bucket, BucketType, Tile};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -36,6 +36,7 @@ thread_local! {
   static INSTANCE: Instance = Instance::default();
 }
 
+#[cfg(target_arch = "wasm32")]
 const DIMENSIONS: usize = 2;
 
 #[cfg(target_arch = "wasm32")]
@@ -112,6 +113,7 @@ pub fn render(view_matrix: Vec<f32>, new_size: Vec<u32>) {
   });
 }
 
+#[cfg(target_arch = "wasm32")]
 fn get_buffers<F>(features: &[F]) -> (Vec<f32>, Vec<u32>)
 where
   F: feature::WithGeometry<geo_types::GeometryCollection<f32>>,
@@ -159,7 +161,7 @@ where
           all_indices.append(&mut indices);
         }
         _ => {
-          info!("Geometry type currently not supported");
+          log::info!("Geometry type currently not supported");
         }
       }
     }
@@ -176,6 +178,7 @@ fn process_tile_parser_queue() {
             return;
           }
 
+          #[cfg(target_arch = "wasm32")]
           let (vertices, indices) = get_buffers(&parsed_features[..]);
 
           INSTANCE.with(|instance| {

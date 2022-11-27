@@ -327,7 +327,7 @@ mod tests {
           vertices.size(),
           |bytes| {
             let size = std::mem::size_of::<Vertex>();
-            for i in (0..16) {
+            for i in 0..16 {
               let start = i * size;
               let end = start + size;
               let output: Vertex = *bytemuck::from_bytes(&bytes[start..end]);
