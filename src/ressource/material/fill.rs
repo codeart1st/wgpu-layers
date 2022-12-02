@@ -28,6 +28,7 @@ impl CreatePipeline<{ MaterialType::Fill }> for Material {
       fill_color: [0.506, 0.694, 0.31, 1.0],
       stroke_color: [0.0, 0.0, 0.0, 1.0],
       stroke_width: 0.0,
+      _pad: [0, 0, 0],
     };
     let style_buffer = ressource_manager.create_buffer_init(&wgpu::util::BufferInitDescriptor {
       label: None,

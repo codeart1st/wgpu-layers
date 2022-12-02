@@ -29,6 +29,7 @@ impl CreatePipeline<{ MaterialType::Line }> for Material {
       fill_color: [0.0, 0.0, 0.0, 1.0],
       stroke_color: [0.0, 0.0, 0.0, 1.0],
       stroke_width: stroke_width * 0.5, // multiply by half because of double sided buffer
+      _pad: [0, 0, 0],
     };
     let style_buffer = ressource_manager.create_buffer_init(&wgpu::util::BufferInitDescriptor {
       label: None,

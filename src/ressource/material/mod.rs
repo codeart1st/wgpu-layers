@@ -1,4 +1,4 @@
-use std::{collections::HashMap, mem::size_of, num::NonZeroU64, sync::Arc};
+use std::{collections::HashMap, mem, sync::Arc};
 
 use super::{BindGroupScope, RessourceManager, ShaderModuleScope};
 
@@ -16,6 +16,8 @@ struct Style {
 
   /// stroke width
   stroke_width: f32,
+
+  _pad: [u32; 3],
 }
 
 #[derive(PartialEq, Eq, Hash, Clone)]
@@ -69,9 +71,7 @@ impl MaterialManager {
           ty: wgpu::BindingType::Buffer {
             ty: wgpu::BufferBindingType::Uniform,
             has_dynamic_offset: false,
-            min_binding_size: Some(
-              NonZeroU64::new(size_of::<Style>().try_into().unwrap()).unwrap(),
-            ),
+            min_binding_size: wgpu::BufferSize::new(mem::size_of::<Style>() as _),
           },
           count: None,
         }],

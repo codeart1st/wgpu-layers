@@ -1,4 +1,4 @@
-use std::{mem::size_of, num::NonZeroU64};
+use std::mem;
 
 use super::{BindGroupScope, RessourceManager};
 
@@ -19,6 +19,8 @@ struct ViewBuffer {
   width: u32,
 
   height: u32,
+
+  _pad: [u32; 2],
 }
 
 pub struct View {
@@ -47,6 +49,7 @@ impl View {
       view_matrix: NORMALIZED_MATRIX,
       width,
       height,
+      _pad: [0, 0],
     };
     let view_matrix_buffer =
       ressource_manager.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -65,9 +68,7 @@ impl View {
           ty: wgpu::BindingType::Buffer {
             ty: wgpu::BufferBindingType::Uniform,
             has_dynamic_offset: false,
-            min_binding_size: Some(
-              NonZeroU64::new(size_of::<ViewBuffer>().try_into().unwrap()).unwrap(),
-            ),
+            min_binding_size: wgpu::BufferSize::new(mem::size_of::<ViewBuffer>() as _),
           },
           count: None,
         }],

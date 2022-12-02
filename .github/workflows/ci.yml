@@ -113,4 +113,4 @@ jobs:
 
       #- run: /usr/bin/firefox-trunk -version
       - name: Run wasm-pack test
-        run: wasm-pack test --${{ matrix.browser }} --headless --release --all-features --test '*'
+        run: wasm-pack test --${{ matrix.browser }} --headless --release --features console_log,console_error_panic_hook --test '*'
