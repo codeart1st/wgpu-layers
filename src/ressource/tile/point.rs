@@ -10,7 +10,10 @@ use super::{Bucket, BucketType, Tile, TileUniform};
 
 const DIMENSIONS: usize = 2;
 
-impl<F> Bucket<F, { BucketType::Line }> for Tile {
+const RECT_VERTEX_BUFFER: [f32; 8] = [-0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, 0.5];
+const RECT_INDICES_BUFFER: [u32; 6] = [0, 1, 2, 2, 3, 0];
+
+impl<F> Bucket<F, { BucketType::Point }> for Tile {
   fn new(ressource_manager: &RessourceManager, extent: [f32; 4]) -> Self {
     let tile_uniform = TileUniform::default();
     let tile_uniform_buffer =
@@ -27,17 +30,33 @@ impl<F> Bucket<F, { BucketType::Line }> for Tile {
       }],
     );
 
+    let vertex_wgpu_buffer = Some(ressource_manager.create_buffer_init(
+      &wgpu::util::BufferInitDescriptor {
+        label: None,
+        contents: bytemuck::cast_slice(&RECT_VERTEX_BUFFER),
+        usage: wgpu::BufferUsages::VERTEX,
+      },
+    ));
+
+    let index_wgpu_buffer = Some(ressource_manager.create_buffer_init(
+      &wgpu::util::BufferInitDescriptor {
+        label: None,
+        contents: bytemuck::cast_slice(&RECT_INDICES_BUFFER),
+        usage: wgpu::BufferUsages::INDEX,
+      },
+    ));
+
     Self {
-      material: ressource_manager.get_material(MaterialType::Line),
+      material: ressource_manager.get_material(MaterialType::Point),
       bind_group,
       tile_uniform_buffer,
-      vertex_wgpu_buffer: None,
+      vertex_wgpu_buffer,
       vertex_buffer: Vec::with_capacity(0),
-      index_wgpu_buffer: None,
+      index_wgpu_buffer,
       index_buffer: Vec::with_capacity(0),
       instance_wgpu_buffer: None,
       extent,
-      bucket_type: BucketType::Line,
+      bucket_type: BucketType::Point,
     }
   }
 
@@ -61,8 +80,7 @@ impl<F> Bucket<F, { BucketType::Line }> for Tile {
               vertex_count += r.0.len() - 1;
             });
             let mut vertices = Vec::with_capacity(vertex_count * DIMENSIONS);
-            let mut hole_indices = Vec::new();
-            for (i, ring) in rings.iter().enumerate() {
+            for ring in rings.iter() {
               // ignore last coordinate (closed ring)
               let end = ring.0.len() - 1;
               let coordinate_slice = &ring.0[..end];
@@ -70,16 +88,8 @@ impl<F> Bucket<F, { BucketType::Line }> for Tile {
                 vertices.push(coord.x);
                 vertices.push(coord.y);
               }
-              if i < rings.len() - 1 {
-                hole_indices.push(vertices.len())
-              }
             }
-            let indices = earcutr::earcut(&vertices, &hole_indices, DIMENSIONS);
-            let offset = (self.vertex_buffer.len() / DIMENSIONS) as u32;
             self.vertex_buffer.append(&mut vertices);
-            self
-              .index_buffer
-              .append(&mut indices.iter().map(|i| (*i as u32) + offset).collect());
           }
           _ => {
             info!("Geometry type currently not supported");
@@ -88,19 +98,11 @@ impl<F> Bucket<F, { BucketType::Line }> for Tile {
       }
     }
 
-    self.vertex_wgpu_buffer = Some(ressource_manager.create_buffer_init(
+    self.instance_wgpu_buffer = Some(ressource_manager.create_buffer_init(
       &wgpu::util::BufferInitDescriptor {
         label: None,
         contents: bytemuck::cast_slice(&self.vertex_buffer),
         usage: wgpu::BufferUsages::VERTEX,
-      },
-    ));
-
-    self.index_wgpu_buffer = Some(ressource_manager.create_buffer_init(
-      &wgpu::util::BufferInitDescriptor {
-        label: None,
-        contents: bytemuck::cast_slice(&self.index_buffer),
-        usage: wgpu::BufferUsages::INDEX,
       },
     ));
   }

@@ -4,6 +4,7 @@ use super::{BindGroupScope, RessourceManager, ShaderModuleScope};
 
 mod fill;
 mod line;
+mod point;
 
 #[repr(C)]
 #[derive(Copy, Clone, bytemuck_derive::Pod, bytemuck_derive::Zeroable)]
@@ -24,6 +25,7 @@ struct Style {
 pub enum MaterialType {
   Fill,
   Line,
+  Point,
 }
 
 pub struct Material {
@@ -101,6 +103,12 @@ impl MaterialManager {
           ressource_manager,
           &self.shader_module,
         )),
+        MaterialType::Point => {
+          Arc::new(<Material as CreatePipeline<{ MaterialType::Point }>>::new(
+            ressource_manager,
+            &self.shader_module,
+          ))
+        }
       });
     material.clone()
   }

@@ -146,6 +146,7 @@ impl RessourceManager {
     match bucket_type {
       BucketType::Fill => Bucket::<F, { BucketType::Fill }>::new(self, extent),
       BucketType::Line => Bucket::<F, { BucketType::Line }>::new(self, extent),
+      BucketType::Point => Bucket::<F, { BucketType::Point }>::new(self, extent),
     }
   }
 

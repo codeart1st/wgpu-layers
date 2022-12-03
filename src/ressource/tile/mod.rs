@@ -8,6 +8,9 @@ use super::{material::Material, view::View, BindGroupScope, RessourceManager};
 
 mod fill;
 mod line;
+mod point;
+
+const DIMENSIONS: usize = 2;
 
 const TILE_SIZE: f32 = 4096.0;
 
@@ -15,6 +18,7 @@ const TILE_SIZE: f32 = 4096.0;
 pub enum BucketType {
   Fill,
   Line,
+  Point,
 }
 
 #[repr(C)]
@@ -42,6 +46,8 @@ pub struct Tile {
   index_wgpu_buffer: Option<wgpu::Buffer>,
 
   index_buffer: Vec<u32>,
+
+  instance_wgpu_buffer: Option<wgpu::Buffer>,
 
   extent: [f32; 4],
 
@@ -80,8 +86,19 @@ impl Tile {
 
         render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
         render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+
         let end = index_buffer.size() as u32 / std::mem::size_of::<u32>() as u32;
-        render_pass.draw_indexed(0..end, 0, 0..1);
+
+        match self.get_bucket_type() {
+          BucketType::Point => {
+            render_pass.set_vertex_buffer(1, self.instance_wgpu_buffer.as_ref().unwrap().slice(..));
+            let instance_end = (self.vertex_buffer.len() / DIMENSIONS) as _;
+            render_pass.draw_indexed(0..end, 0, 0..instance_end);
+          }
+          _ => {
+            render_pass.draw_indexed(0..end, 0, 0..1);
+          }
+        }
       }
       _ => {
         info!("No features found")

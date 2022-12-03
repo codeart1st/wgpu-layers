@@ -208,19 +208,34 @@ fn process_tile_parser_queue() {
             let mut tile = renderer
               .create_tile::<Feature<geo_types::GeometryCollection<f32>>>(BucketType::Fill, extent);
 
-            match tile.get_bucket_type() {
-              BucketType::Fill => {
+            if tile.get_bucket_type() == BucketType::Fill {
+              <Tile as Bucket<
+                Feature<geo_types::GeometryCollection<f32>>,
+                { BucketType::Fill },
+              >>::add_features(
+                &mut tile, &mut parsed_features, &renderer.ressource_manager
+              );
+            }
+
+            instance.tiles.borrow_mut().push(tile);
+
+            {
+              let mut tile = renderer.create_tile::<Feature<geo_types::GeometryCollection<f32>>>(
+                BucketType::Point,
+                extent,
+              );
+
+              if tile.get_bucket_type() == BucketType::Point {
                 <Tile as Bucket<
                   Feature<geo_types::GeometryCollection<f32>>,
-                  { BucketType::Fill },
+                  { BucketType::Point },
                 >>::add_features(
                   &mut tile, &mut parsed_features, &renderer.ressource_manager
                 );
               }
-              BucketType::Line => {}
-            }
 
-            instance.tiles.borrow_mut().push(tile);
+              instance.tiles.borrow_mut().push(tile);
+            }
           });
         }
       }

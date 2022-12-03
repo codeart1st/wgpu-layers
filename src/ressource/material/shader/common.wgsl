@@ -57,6 +57,12 @@ fn vs_stroke(vertex: VertexInput) -> FragmentInput {
   return FragmentInput(position, vertex.normal);
 }
 
+@vertex
+fn vs_point(@location(0) pos: vec2<f32>, @location(1) point: vec2<f32>) -> @builtin(position) vec4<f32> {
+  var scale = 1.0 / (view.view_matrix[0][0] * f32(view.width));
+  return tile.model_view_matrix * vec4<f32>((pos * 0.02 * scale) + point, 0.0, 1.0);
+}
+
 fn clipping_and_premul_alpha(position: vec4<f32>, input_color: vec4<f32>) -> FragmentOutput {
   var color = input_color.a * vec4<f32>(input_color.rgb, 1.0); // pre-multiplied alpha
   var fragment_output = FragmentOutput(color, 0xFFFFFFFFu);

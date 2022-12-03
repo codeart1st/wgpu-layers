@@ -35,6 +35,7 @@ impl<F> Bucket<F, { BucketType::Fill }> for Tile {
       vertex_buffer: Vec::with_capacity(0),
       index_wgpu_buffer: None,
       index_buffer: Vec::with_capacity(0),
+      instance_wgpu_buffer: None,
       extent,
       bucket_type: BucketType::Fill,
     }

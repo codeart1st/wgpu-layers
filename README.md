@@ -31,11 +31,12 @@ wasm-pack build --release --all-features --target web
   - [x] Initial support
 - [ ] Line
   - [x] Initial support
-  - [ ] Anti aliasing
+  - [x] Anti aliasing
   - [ ] Line joins
   - [ ] Line caps
-- [ ] Points
-  - [ ] Initial support
+- [x] Points
+  - [x] Initial support
+  - [ ] Shapes
 - [ ] Move polygon triangulation to worker threads
 - [ ] Architecture overhaul
   - [ ] Combine tiles in buckets with same material
