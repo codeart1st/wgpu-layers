@@ -34,7 +34,7 @@ wasm-pack build --release --all-features --target web
   - [x] Anti aliasing
   - [ ] Line joins
   - [ ] Line caps
-- [x] Points
+- [ ] Points
   - [x] Initial support
   - [ ] Shapes
 - [ ] Move polygon triangulation to worker threads
