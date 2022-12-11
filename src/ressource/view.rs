@@ -2,19 +2,11 @@ use std::mem;
 
 use super::{BindGroupScope, RessourceManager};
 
-#[rustfmt::skip]
-const NORMALIZED_MATRIX: [[f32; 4]; 4] = [
-  [1.0, 0.0, 0.0, 0.0],
-  [0.0, 1.0, 0.0, 0.0],
-  [0.0, 0.0, 1.0, 0.0],
-  [0.0, 0.0, 0.0, 1.0],
-];
-
 #[repr(C)]
 #[derive(Default, Copy, Clone, bytemuck_derive::Pod, bytemuck_derive::Zeroable)]
 struct ViewBuffer {
   /// transformation matrix world-space to view-space
-  view_matrix: [[f32; 4]; 4],
+  view_matrix: glam::Mat4,
 
   width: u32,
 
@@ -46,7 +38,7 @@ pub struct View {
 impl View {
   pub fn new((width, height): (u32, u32), ressource_manager: &mut RessourceManager) -> Self {
     let view_matrix = ViewBuffer {
-      view_matrix: NORMALIZED_MATRIX,
+      view_matrix: glam::Mat4::IDENTITY,
       width,
       height,
       _pad: [0, 0],
@@ -118,11 +110,11 @@ impl View {
   }
 
   pub fn set_view_matrix(&mut self, view_matrix: [[f32; 4]; 4]) {
-    self.view_buffer.view_matrix = view_matrix;
+    self.view_buffer.view_matrix = glam::Mat4::from_cols_array_2d(&view_matrix);
   }
 
   pub fn get_view_matrix(&self) -> [[f32; 4]; 4] {
-    self.view_buffer.view_matrix
+    self.view_buffer.view_matrix.to_cols_array_2d()
   }
 
   pub fn get_size(&self) -> (u32, u32) {
