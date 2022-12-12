@@ -24,7 +24,7 @@ pub enum BucketType {
 #[repr(C)]
 #[derive(Default, Copy, Clone, bytemuck_derive::Pod, bytemuck_derive::Zeroable)]
 struct TileUniform {
-  model_view_matrix: [[f32; 4]; 4],
+  model_view_matrix: glam::Mat4,
   clipping_rect: [f32; 4],
 }
 
@@ -111,60 +111,36 @@ impl Tile {
   }
 }
 
-#[allow(clippy::needless_range_loop)]
-fn mat4x4_mul(a: &[[f32; 4]; 4], b: &[[f32; 4]; 4]) -> [[f32; 4]; 4] {
-  let mut c = [[0.0; 4]; 4];
-
-  for i in 0..4 {
-    for j in 0..4 {
-      for k in 0..4 {
-        c[i][j] += a[k][j] * b[i][k];
-      }
-    }
-  }
-  c
-}
-
-#[allow(clippy::needless_range_loop)]
-fn mat4x4_mul_vec4(a: &[[f32; 4]; 4], b: &[f32; 4]) -> [f32; 4] {
-  let mut result = [0.0; 4];
-  for i in 0..4 {
-    for j in 0..4 {
-      result[i] += b[j] * a[j][i];
-    }
-  }
-  result
-}
-
 /// tile_transform * flip_tile_transform because of Y-axis swap
 #[rustfmt::skip]
-fn get_model_matrix(extent: [f32; 4], tile_size: f32) -> [[f32; 4]; 4] {
-  let tile_transform = [ // column-major order
-    [(extent[2] - extent[0]) / tile_size, 0.0, 0.0, 0.0], // a11 a21 a31 a41
-    [0.0, (extent[2] - extent[0]) / tile_size, 0.0, 0.0], // a12 a22 a32 a42
-    [0.0, 0.0, 1.0, 0.0                                ], // a13 a23 a33 a43
-    [extent[0], extent[1], 0.0, 1.0                    ], // a14 a24 a34 a44
-  ];
-  let flip_tile_transform = [
-    [1.0, 0.0, 0.0, 0.0],
-    [0.0, -1.0, 0.0, 0.0],
-    [0.0, 0.0, 1.0, 0.0],
-    [0.0, tile_size, 0.0, 1.0],
-  ];
-  mat4x4_mul(&tile_transform, &flip_tile_transform)
+fn get_model_matrix(extent: [f32; 4], tile_size: f32) -> glam::Mat4 {
+  let tile_transform = glam::Mat4::from_cols_array(&[
+    (extent[2] - extent[0]) / tile_size, 0.0, 0.0, 0.0, // a11 a21 a31 a41
+    0.0, (extent[2] - extent[0]) / tile_size, 0.0, 0.0, // a12 a22 a32 a42
+    0.0, 0.0, 1.0, 0.0,                                 // a13 a23 a33 a43
+    extent[0], extent[1], 0.0, 1.0,                     // a14 a24 a34 a44
+  ]);
+  let flip_tile_transform = glam::Mat4::from_cols_array(&[
+    1.0, 0.0, 0.0, 0.0,
+    0.0, -1.0, 0.0, 0.0,
+    0.0, 0.0, 1.0, 0.0,
+    0.0, tile_size, 0.0, 1.0,
+  ]);
+  tile_transform.mul_mat4(&flip_tile_transform)
 }
 
 fn get_transforms(
-  view_matrix: [[f32; 4]; 4],
+  view_matrix: glam::Mat4,
   extent: [f32; 4],
   half_width: f32,
   half_height: f32,
 ) -> TileUniform {
   let model_matrix = get_model_matrix(extent, TILE_SIZE);
-  let model_view_matrix = mat4x4_mul(&view_matrix, &model_matrix);
+  let model_view_matrix = view_matrix.mul_mat4(&model_matrix);
 
-  let min_extent = mat4x4_mul_vec4(&model_view_matrix, &[0.0, 0.0, 0.0, 1.0]);
-  let max_extent = mat4x4_mul_vec4(&model_view_matrix, &[TILE_SIZE, TILE_SIZE, 0.0, 1.0]);
+  let min_extent = model_view_matrix.mul_vec4(glam::Vec4::W);
+  let max_extent =
+    model_view_matrix.mul_vec4(glam::Vec4::from_slice(&[TILE_SIZE, TILE_SIZE, 0.0, 1.0]));
 
   // convert from view to screen coordinates (pixels)
   let clipping_rect = [

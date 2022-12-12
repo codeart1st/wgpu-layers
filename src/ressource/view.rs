@@ -3,7 +3,7 @@ use std::mem;
 use super::{BindGroupScope, RessourceManager};
 
 #[repr(C)]
-#[derive(Default, Copy, Clone, bytemuck_derive::Pod, bytemuck_derive::Zeroable)]
+#[derive(Copy, Clone, bytemuck_derive::Pod, bytemuck_derive::Zeroable)]
 struct ViewBuffer {
   /// transformation matrix world-space to view-space
   view_matrix: glam::Mat4,
@@ -109,12 +109,12 @@ impl View {
     self.view_buffer.height = height;
   }
 
-  pub fn set_view_matrix(&mut self, view_matrix: [[f32; 4]; 4]) {
-    self.view_buffer.view_matrix = glam::Mat4::from_cols_array_2d(&view_matrix);
+  pub fn set_view_matrix(&mut self, view_matrix: glam::Mat4) {
+    self.view_buffer.view_matrix = view_matrix;
   }
 
-  pub fn get_view_matrix(&self) -> [[f32; 4]; 4] {
-    self.view_buffer.view_matrix.to_cols_array_2d()
+  pub fn get_view_matrix(&self) -> glam::Mat4 {
+    self.view_buffer.view_matrix
   }
 
   pub fn get_size(&self) -> (u32, u32) {

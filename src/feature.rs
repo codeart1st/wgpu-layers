@@ -4,7 +4,6 @@ pub trait WithGeometry<T> {
   fn get_geometry(&self) -> &T;
 }
 
-#[derive(Default)]
 pub struct Feature<T> {
   pub geometry: T,
 

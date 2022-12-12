@@ -1,7 +1,9 @@
 [package]
 name = "wgpu-layers"
 version = "0.1.0"
+description = "WebGPU mapping renderer for OpenLayers"
 authors = ["Paul Lange <paul.lange@data-experts.de>"]
+repository = "https://github.com/codeart1st/wgpu-layers"
 license = "MIT"
 edition = "2021"
 

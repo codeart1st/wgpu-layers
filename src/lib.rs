@@ -93,15 +93,10 @@ pub fn render(view_matrix: Vec<f32>, new_size: Vec<u32>) {
   INSTANCE.with(|instance| {
     let mut reference = instance.renderer.borrow_mut();
     let renderer = reference.as_mut().unwrap();
-    let mut view_matrix_array = [[0.0; 4]; 4];
 
-    #[allow(clippy::needless_range_loop)]
-    for i in 0..4 {
-      for j in 0..4 {
-        view_matrix_array[i][j] = *view_matrix.get(i * 4 + j).expect("view matrix is wrong");
-      }
-    }
-    renderer.view.set_view_matrix(view_matrix_array);
+    renderer
+      .view
+      .set_view_matrix(glam::Mat4::from_cols_slice(&view_matrix[..]));
 
     let current_size = instance.current_size.get();
     if current_size.0 != new_size[0] || current_size.1 != new_size[1] {
