@@ -39,7 +39,8 @@ var<uniform> style: Style;
 @group(2) @binding(0)
 var<uniform> tile: Tile;
 
-const GLOBAL_SCALE: f32 = 0.0032; // can this be calculated?
+// const expression currently not supported by naga wgsl-in
+let GLOBAL_SCALE: f32 = 0.0032; // can this be calculated?
 
 @vertex
 fn vs_fill(
@@ -58,9 +59,9 @@ fn vs_stroke(vertex: VertexInput) -> FragmentInput {
 }
 
 @vertex
-fn vs_point(@location(0) pos: vec2<f32>, @location(1) point: vec2<f32>) -> @builtin(position) vec4<f32> {
+fn vs_point(@location(0) pos: vec2<f32>, @location(1) point_location: vec2<f32>) -> @builtin(position) vec4<f32> {
   var scale = 1.0 / (view.view_matrix[0][0] * f32(view.width));
-  return tile.model_view_matrix * vec4<f32>((pos * 0.02 * scale) + point, 0.0, 1.0);
+  return tile.model_view_matrix * vec4<f32>((pos * 0.02 * scale) + point_location, 0.0, 1.0);
 }
 
 fn clipping_and_premul_alpha(position: vec4<f32>, input_color: vec4<f32>) -> FragmentOutput {
