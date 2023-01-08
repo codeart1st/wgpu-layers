@@ -106,7 +106,6 @@ jobs:
 
   integration-test:
     timeout-minutes: 10
-    continue-on-error: true
     runs-on: ubuntu-22.04
     strategy:
       matrix:
