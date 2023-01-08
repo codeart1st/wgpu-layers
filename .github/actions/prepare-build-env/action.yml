@@ -1,4 +1,10 @@
 name: Prepare build environment
+description: Ensures that everything is prepared for our build jobs
+
+outputs:
+  cargo-cache-primary-key:
+    description: Primary key of cargo cache restore action
+    value: ${{ steps.cargo-cache.outputs.cache-primary-key }}
 
 runs:
   using: "composite"
@@ -15,31 +21,45 @@ runs:
       shell: bash
       run: sudo apt-get install -y brotli
 
-    - name: Cache rust-toolchain (shared)
+    - name: Cache rust-toolchain (restore)
       id: rustup-cache
-      uses: actions/cache@v3.0.11
+      uses: actions/cache/restore@v3.2.2
       with:
-        path: |
-          ~/.rustup/toolchains
-          ~/.rustup/update-hashes
-          ~/.rustup/settings.toml
-        key: toolchain-${{ hashFiles('rust-toolchain') }}-1
+       path: |
+         ~/.rustup/toolchains
+         ~/.rustup/update-hashes
+         ~/.rustup/settings.toml
+       key: toolchain-${{ hashFiles('rust-toolchain') }}-1
 
     - name: Use rust-toolchain nightly
       if: steps.rustup-cache.outputs.cache-hit != 'true'
-      id: rustup
       shell: bash
       run: |
         rustup toolchain uninstall stable
         rustup toolchain install $(cat rust-toolchain) --profile minimal \
           --target wasm32-unknown-unknown --component clippy,rust-src
-        rustup show
-        echo "::set-output name=version::$(rustc --version | cut -d ' ' -f 2)"
 
-    - name: Cache cargo output (job)
-      uses: pat-s/always-upload-cache@v3.0.11 # https://github.com/actions/cache/issues/92
+    - name: Get rust version
+      id: rustup
+      shell: bash
+      run: |
+        rustup show
+        echo "version=$(rustc --version | cut -d ' ' -f 2)" >> $GITHUB_OUTPUT
+
+    - name: Cache rust-toolchain (save)
+      uses: actions/cache/save@v3.2.2
+      if: steps.rustup-cache.outputs.cache-hit != 'true'
       with:
-        key: ${{ runner.os }}-${{ steps.rustup.outputs.version }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ github.job }}-1
+        path: |
+          ~/.rustup/toolchains
+          ~/.rustup/update-hashes
+          ~/.rustup/settings.toml
+        key: ${{ steps.rustup-cache.outputs.cache-primary-key }}
+
+    - name: Cache cargo output (restore)
+      id: cargo-cache
+      uses: actions/cache/restore@v3.2.2
+      with:
         path: |
           ~/.cargo/bin/
           ~/.cargo/.crates.toml
@@ -48,3 +68,4 @@ runs:
           ~/.cargo/registry/
           ~/.cargo/git/db/
           target/
+        key: ${{ runner.os }}-${{ steps.rustup.outputs.version }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ github.job }}-1

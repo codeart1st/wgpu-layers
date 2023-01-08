@@ -1,4 +1,5 @@
 name: Install graphics driver
+description: Ensures that all necessary Mesa libraries are installed
 
 runs:
   using: "composite"

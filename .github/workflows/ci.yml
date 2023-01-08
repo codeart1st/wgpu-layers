@@ -15,16 +15,16 @@ permissions:
 
 jobs:
   lint:
-    timeout-minutes: 30
-    continue-on-error: true
+    timeout-minutes: 10
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v3.3.0
         with:
           submodules: recursive
 
       - name: Prepare build environemnt
+        id: prepare
         uses: ./.github/actions/prepare-build-env
 
       - name: Run cargo clippy
@@ -37,16 +37,23 @@ jobs:
         #  token: ${{ secrets.GITHUB_TOKEN }}
         #  args: --target wasm32-unknown-unknown --tests --all-features
 
+      - name: Post build environemnt
+        if: always()
+        uses: ./.github/actions/post-build-env
+        with:
+          cargo-cache-primary-key: ${{ steps.prepare.outputs.cargo-cache-primary-key }}
+
   build:
-    timeout-minutes: 30
+    timeout-minutes: 10
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v3.3.0
         with:
           submodules: recursive
 
       - name: Prepare build environemnt
+        id: prepare
         uses: ./.github/actions/prepare-build-env
 
       - name: Run wasm-pack build
@@ -62,18 +69,26 @@ jobs:
         run: |
           brotli -Z pkg/wgpu_layers_bg.wasm
           gzip -k pkg/wgpu_layers_bg.wasm
+          ls -lh pkg/
           [[ $(stat -c %s pkg/wgpu_layers_bg.wasm.br) -lt 100000 ]]
 
+      - name: Post build environemnt
+        if: always()
+        uses: ./.github/actions/post-build-env
+        with:
+          cargo-cache-primary-key: ${{ steps.prepare.outputs.cargo-cache-primary-key }}
+
   unit-test:
-    timeout-minutes: 30
+    timeout-minutes: 10
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v3.3.0
         with:
           submodules: recursive
 
       - name: Prepare build environemnt
+        id: prepare
         uses: ./.github/actions/prepare-build-env
 
       - name: Use libegl1-mesa latest
@@ -83,8 +98,14 @@ jobs:
         run: |
           cargo test --target `rustc -vV | sed -n 's|host: ||p'` -- --nocapture
 
+      - name: Post build environemnt
+        if: always()
+        uses: ./.github/actions/post-build-env
+        with:
+          cargo-cache-primary-key: ${{ steps.prepare.outputs.cargo-cache-primary-key }}
+
   integration-test:
-    timeout-minutes: 30
+    timeout-minutes: 10
     continue-on-error: true
     runs-on: ubuntu-22.04
     strategy:
@@ -93,11 +114,12 @@ jobs:
         browser: [chrome]
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v3.3.0
         with:
           submodules: recursive
 
       - name: Prepare build environemnt
+        id: prepare
         uses: ./.github/actions/prepare-build-env
 
       - name: Use libegl-mesa0 latest
@@ -113,3 +135,9 @@ jobs:
       #- run: /usr/bin/firefox-trunk -version
       - name: Run wasm-pack test
         run: wasm-pack test --${{ matrix.browser }} --headless --release --features console_log,console_error_panic_hook --test '*'
+
+      - name: Post build environemnt
+        if: always()
+        uses: ./.github/actions/post-build-env
+        with:
+          cargo-cache-primary-key: ${{ steps.prepare.outputs.cargo-cache-primary-key }}

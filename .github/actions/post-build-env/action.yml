@@ -1,0 +1,23 @@
+name: Post build environment
+description: Clean up build environment actions
+
+inputs:
+  cargo-cache-primary-key:
+    description: Primary key of cargo cache restore action
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Cache cargo output (save)
+      uses: actions/cache/save@v3.2.2
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/.crates.toml
+          ~/.cargo/.crates2.json
+          ~/.cargo/.package-cache
+          ~/.cargo/registry/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ inputs.cargo-cache-primary-key }}
