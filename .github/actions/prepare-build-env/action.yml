@@ -5,6 +5,9 @@ outputs:
   cargo-cache-primary-key:
     description: Primary key of cargo cache restore action
     value: ${{ steps.cargo-cache.outputs.cache-primary-key }}
+  cargo-cache-hit:
+    description: A boolean value to indicate an exact match was found for the cargo cache restore action
+    value: ${{ steps.cargo-cache.outputs.cache-hit }}
 
 runs:
   using: "composite"
@@ -23,7 +26,7 @@ runs:
 
     - name: Cache rust-toolchain (restore)
       id: rustup-cache
-      uses: actions/cache/restore@v3.2.2
+      uses: actions/cache/restore@v3.2.3
       with:
        path: |
          ~/.rustup/toolchains
@@ -47,7 +50,7 @@ runs:
         echo "version=$(rustc --version | cut -d ' ' -f 2)" >> $GITHUB_OUTPUT
 
     - name: Cache rust-toolchain (save)
-      uses: actions/cache/save@v3.2.2
+      uses: actions/cache/save@v3.2.3
       if: steps.rustup-cache.outputs.cache-hit != 'true'
       with:
         path: |
@@ -58,7 +61,7 @@ runs:
 
     - name: Cache cargo output (restore)
       id: cargo-cache
-      uses: actions/cache/restore@v3.2.2
+      uses: actions/cache/restore@v3.2.3
       with:
         path: |
           ~/.cargo/bin/

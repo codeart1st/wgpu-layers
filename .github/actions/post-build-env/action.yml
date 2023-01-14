@@ -5,12 +5,16 @@ inputs:
   cargo-cache-primary-key:
     description: Primary key of cargo cache restore action
     required: true
+  cargo-cache-hit:
+    description: A boolean value to indicate an exact match was found for the cargo cache restore action
+    required: true
 
 runs:
   using: "composite"
   steps:
     - name: Cache cargo output (save)
-      uses: actions/cache/save@v3.2.2
+      if: inputs.cargo-cache-hit != 'true'
+      uses: actions/cache/save@v3.2.3
       with:
         path: |
           ~/.cargo/bin/

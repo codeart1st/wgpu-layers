@@ -42,6 +42,7 @@ jobs:
         uses: ./.github/actions/post-build-env
         with:
           cargo-cache-primary-key: ${{ steps.prepare.outputs.cargo-cache-primary-key }}
+          cargo-cache-hit: ${{ steps.prepare.outputs.cargo-cache-hit }}
 
   build:
     timeout-minutes: 10
@@ -77,6 +78,7 @@ jobs:
         uses: ./.github/actions/post-build-env
         with:
           cargo-cache-primary-key: ${{ steps.prepare.outputs.cargo-cache-primary-key }}
+          cargo-cache-hit: ${{ steps.prepare.outputs.cargo-cache-hit }}
 
   unit-test:
     timeout-minutes: 10
@@ -103,6 +105,7 @@ jobs:
         uses: ./.github/actions/post-build-env
         with:
           cargo-cache-primary-key: ${{ steps.prepare.outputs.cargo-cache-primary-key }}
+          cargo-cache-hit: ${{ steps.prepare.outputs.cargo-cache-hit }}
 
   integration-test:
     timeout-minutes: 10
@@ -140,3 +143,4 @@ jobs:
         uses: ./.github/actions/post-build-env
         with:
           cargo-cache-primary-key: ${{ steps.prepare.outputs.cargo-cache-primary-key }}
+          cargo-cache-hit: ${{ steps.prepare.outputs.cargo-cache-hit }}
