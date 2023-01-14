@@ -1,3 +1,5 @@
+import 'ol/ol.css'
+
 import { Map, View } from 'ol'
 import { Tile } from 'ol/layer'
 import { createXYZ } from 'ol/tilegrid'

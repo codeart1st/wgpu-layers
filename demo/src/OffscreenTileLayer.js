@@ -24,7 +24,9 @@ export class OffscreenTileLayer extends Tile {
 
     this.offscreenCanvas = offscreenCanvas
 
-    this.worker = new Worker(new URL('./worker', import.meta.url))
+    this.worker = new Worker(new URL('./worker', import.meta.url), {
+      type: 'module'
+    })
 
     this.worker.postMessage({
       type: SHARED_ARRAY_BUFFER,
