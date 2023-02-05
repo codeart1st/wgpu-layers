@@ -39,8 +39,7 @@ var<uniform> style: Style;
 @group(2) @binding(0)
 var<uniform> tile: Tile;
 
-// const expression currently not supported by naga wgsl-in
-let GLOBAL_SCALE: f32 = 0.0032; // can this be calculated?
+const GLOBAL_SCALE: f32 = 0.0032; // can this be calculated?
 
 @vertex
 fn vs_fill(
