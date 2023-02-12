@@ -46,7 +46,7 @@ env_logger = "0.10.0"
 winit = "0.27.5"
 
 [dev-dependencies]
-wasm-bindgen-test = "0.3.33"
+wasm-bindgen-test = "0.3.34"
 include-base64 = "0.1.0"
 js-sys = "0.3.61"
 
