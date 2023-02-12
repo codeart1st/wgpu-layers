@@ -106,7 +106,7 @@ fn shoelace_formula(points: &[Point<f32>]) -> f32 {
   let n = points.len();
   let mut v1 = points[n - 1];
   for v2 in points.iter().take(n) {
-    area += (v2.y() as f32 - v1.y() as f32) * (v2.x() + v1.x()) as f32;
+    area += (v2.y() - v1.y()) * (v2.x() + v1.x());
     v1 = *v2;
   }
   area * 0.5
@@ -165,9 +165,9 @@ fn parse_geometry(
       let parameter_integer = value;
       let integer_value = ((parameter_integer >> 1) as i32) ^ -((parameter_integer & 1) as i32);
       if parameter_count % 2 == 0 {
-        cursor[0] = cursor[0] as i32 + integer_value;
+        cursor[0] += integer_value;
       } else {
-        cursor[1] = cursor[1] as i32 + integer_value;
+        cursor[1] += integer_value;
         /*match geom_type {
           vector_tile::tile::GeomType::Polygon => {
             info!("Polygon {} {}", cursor[0], cursor[1]);

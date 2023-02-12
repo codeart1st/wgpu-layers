@@ -144,8 +144,8 @@ where
               indices.push(i as u32 + offset);
             }
 
-            indices.push(offset as u32); // close ring
-            indices.push(offset as u32); // separate linestring from the next one
+            indices.push(offset); // close ring
+            indices.push(offset); // separate linestring from the next one
             offset += coordinate_slice.len() as u32;
 
             if i < rings.len() - 1 {
