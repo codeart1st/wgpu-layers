@@ -47,27 +47,35 @@ pub trait ToSurface {
   /// - Raw Window Handle must be a valid object to create a surface upon and
   ///   must remain valid for the lifetime of the returned surface.
   /// - If not called on the main thread, metal backend will panic.
-  unsafe fn create_surface(&self, instance: &wgpu::Instance) -> wgpu::Surface;
+  unsafe fn create_surface(&self, instance: &wgpu::Instance) -> Result<wgpu::Surface, wgpu::CreateSurfaceError>;
 }
 
 impl Renderer {
   pub async fn new<W: ToSurface>(window: &W, (width, height): (u32, u32)) -> Self {
     let instance =
-      wgpu::Instance::new(wgpu::util::backend_bits_from_env().unwrap_or(wgpu::Backends::all()));
+      wgpu::Instance::new(wgpu::InstanceDescriptor {
+        backends: wgpu::util::backend_bits_from_env().unwrap_or(wgpu::Backends::all()),
+        dx12_shader_compiler: wgpu::util::dx12_shader_compiler_from_env().unwrap_or_default()
+      });
 
-    let surface;
+    let swapchain;
     unsafe {
-      surface = window.create_surface(&instance);
+      swapchain = match window.create_surface(&instance) {
+        Ok(surface) => surface,
+        Err(err) => {
+          panic!("{}", err.to_string())
+        }
+      }
     };
 
-    info!("surface: {:?}", &surface);
+    info!("surface: {:?}", &swapchain);
 
     let adapter = instance
       .request_adapter(&wgpu::RequestAdapterOptions {
         power_preference: wgpu::util::power_preference_from_env()
           .unwrap_or(wgpu::PowerPreference::HighPerformance),
         force_fallback_adapter: false,
-        compatible_surface: Some(&surface),
+        compatible_surface: Some(&swapchain),
       })
       .await
       .expect("Adapter not created.");
@@ -91,27 +99,25 @@ impl Renderer {
     let device = Arc::new(device);
     let queue = Arc::new(queue);
 
-    let supported_formats = surface.get_supported_formats(&adapter);
+    let swapchain_capabilities = swapchain.get_capabilities(&adapter);
 
-    info!("supported surface formats: {:?}", supported_formats);
+    info!("supported surface formats: {:?}", swapchain_capabilities.formats);
 
-    let texture_format = if supported_formats.contains(&PREFERRED_TEXTURE_FORMAT) {
+    let texture_format = if swapchain_capabilities.formats.contains(&PREFERRED_TEXTURE_FORMAT) {
       PREFERRED_TEXTURE_FORMAT
     } else {
-      supported_formats
+      swapchain_capabilities.formats
         .first()
         .expect("Can't get texture format for surface.")
         .to_owned()
     };
 
-    let supported_alpha_modes = surface.get_supported_alpha_modes(&adapter);
+    info!("supported alpha modes: {:?}", swapchain_capabilities.alpha_modes);
 
-    info!("supported alpha modes: {:?}", supported_alpha_modes);
-
-    let _alpha_mode = if supported_alpha_modes.contains(&PREFERRED_ALPHA_MODE) {
+    let _alpha_mode = if swapchain_capabilities.alpha_modes.contains(&PREFERRED_ALPHA_MODE) {
       PREFERRED_ALPHA_MODE
     } else {
-      supported_alpha_modes
+      swapchain_capabilities.alpha_modes
         .first()
         .expect("Can't get present mode for surface.")
         .to_owned()
@@ -124,9 +130,10 @@ impl Renderer {
       height,
       present_mode: wgpu::PresentMode::Fifo,
       alpha_mode: wgpu::CompositeAlphaMode::PreMultiplied,
+      view_formats: vec![],
     };
 
-    surface.configure(&device, &surface_config);
+    swapchain.configure(&device, &surface_config);
 
     let line_tessellation = LineTessellation::new((device.clone(), queue.clone()));
 
@@ -137,7 +144,7 @@ impl Renderer {
       texture_format,
       view: View::new((width, height), &mut ressource_manager),
       line_tessellation,
-      surface,
+      surface: swapchain,
       surface_config,
       ressource_manager,
     }

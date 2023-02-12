@@ -7,7 +7,7 @@ mod example {
   }
 
   impl wgpu_layers::renderer::ToSurface for MapWindow {
-    unsafe fn create_surface(&self, instance: &wgpu::Instance) -> wgpu::Surface {
+    unsafe fn create_surface(&self, instance: &wgpu::Instance) -> Result<wgpu::Surface, wgpu::CreateSurfaceError> {
       instance.create_surface(&self.window)
     }
   }
