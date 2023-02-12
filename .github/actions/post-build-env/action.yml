@@ -13,7 +13,7 @@ runs:
   using: "composite"
   steps:
     - name: Cache cargo output (save)
-      if: inputs.cargo-cache-hit != 'true' && !contains(github.ref, 'dependabot')
+      if: inputs.cargo-cache-hit != 'true' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
       uses: actions/cache/save@v3.2.3
       with:
         path: |
