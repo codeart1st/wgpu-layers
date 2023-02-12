@@ -51,7 +51,7 @@ runs:
 
     - name: Cache rust-toolchain (save)
       uses: actions/cache/save@v3.2.3
-      if: steps.rustup-cache.outputs.cache-hit != 'true'
+      if: steps.rustup-cache.outputs.cache-hit != 'true' && !contains(github.ref, 'dependabot')
       with:
         path: |
           ~/.rustup/toolchains
