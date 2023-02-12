@@ -74,7 +74,8 @@ impl<F> Bucket<F, { BucketType::Fill }> for Tile {
                 hole_indices.push(vertices.len())
               }
             }
-            let indices = earcutr::earcut(&vertices, &hole_indices, DIMENSIONS);
+            let indices =
+              earcutr::earcut(&vertices, &hole_indices, DIMENSIONS).expect("earcutr error");
             let offset = (self.vertex_buffer.len() / DIMENSIONS) as u32;
             self.vertex_buffer.append(&mut vertices);
             self
