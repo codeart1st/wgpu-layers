@@ -21,3 +21,24 @@ updates:
       interval: daily
     target-branch: "develop"
     open-pull-requests-limit: 10
+
+  - package-ecosystem: github-actions
+    directory: /.github/actions/install-graphics-driver
+    schedule:
+      interval: daily
+    target-branch: "develop"
+    open-pull-requests-limit: 10
+
+  - package-ecosystem: github-actions
+    directory: /.github/actions/prepare-build-env
+    schedule:
+      interval: daily
+    target-branch: "develop"
+    open-pull-requests-limit: 10
+
+  - package-ecosystem: github-actions
+    directory: /.github/actions/post-build-env
+    schedule:
+      interval: daily
+    target-branch: "develop"
+    open-pull-requests-limit: 10
