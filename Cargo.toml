@@ -48,7 +48,7 @@ winit = "0.27.5"
 [dev-dependencies]
 wasm-bindgen-test = "0.3.33"
 include-base64 = "0.1.0"
-js-sys = "0.3.60"
+js-sys = "0.3.61"
 
 [build-dependencies]
 prost-build = "0.11.6"
