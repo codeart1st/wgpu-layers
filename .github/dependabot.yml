@@ -8,9 +8,12 @@ updates:
     open-pull-requests-limit: 10
 
   - package-ecosystem: npm
-    directory: /
+    directory: /demo
     schedule:
       interval: daily
+    allow:
+      - dependency-type: production
+      - dependency-type: development
     open-pull-requests-limit: 10
 
   - package-ecosystem: github-actions
