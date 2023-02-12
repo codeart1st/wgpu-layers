@@ -1,0 +1,21 @@
+{
+  "name": "wgpu-layers",
+  "collaborators": [
+    "Paul Lange <paul.lange@data-experts.de>"
+  ],
+  "description": "WebGPU mapping renderer for OpenLayers",
+  "version": "0.1.0",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/codeart1st/wgpu-layers"
+  },
+  "files": [
+    "wgpu_layers_bg.wasm",
+    "wgpu_layers.js",
+    "wgpu_layers.d.ts"
+  ],
+  "module": "wgpu_layers.js",
+  "types": "wgpu_layers.d.ts",
+  "sideEffects": false
+}
