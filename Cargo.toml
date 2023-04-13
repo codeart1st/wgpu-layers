@@ -51,7 +51,7 @@ include-base64 = "0.1.0"
 js-sys = "0.3.61"
 
 [build-dependencies]
-prost-build = "0.11.8"
+prost-build = "0.11.9"
 
 [profile.release]
 opt-level = "s"
