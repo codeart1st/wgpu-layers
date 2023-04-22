@@ -46,14 +46,20 @@ pub mod wasm {
   pub use wasm_bindgen_rayon::init_thread_pool;
 
   impl super::renderer::ToSurface for web_sys::OffscreenCanvas {
-    unsafe fn create_surface(&self, instance: &wgpu::Instance) -> Result<wgpu::Surface, wgpu::CreateSurfaceError> {
-      instance.create_surface_from_offscreen_canvas(self)
+    unsafe fn create_surface(
+      &self,
+      instance: &wgpu::Instance,
+    ) -> Result<wgpu::Surface, wgpu::CreateSurfaceError> {
+      instance.create_surface_from_offscreen_canvas(self.clone())
     }
   }
 
   impl super::renderer::ToSurface for web_sys::HtmlCanvasElement {
-    unsafe fn create_surface(&self, instance: &wgpu::Instance) -> Result<wgpu::Surface, wgpu::CreateSurfaceError> {
-      instance.create_surface_from_canvas(self)
+    unsafe fn create_surface(
+      &self,
+      instance: &wgpu::Instance,
+    ) -> Result<wgpu::Surface, wgpu::CreateSurfaceError> {
+      instance.create_surface_from_canvas(self.clone())
     }
   }
 
