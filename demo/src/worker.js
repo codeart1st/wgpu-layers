@@ -5,9 +5,6 @@ import { READY, STARTED, CANVAS, SHARED_ARRAY_BUFFER, PBF_DATA } from './types'
 
 let canvas, shared_state, ready = false
 
-// https://github.com/gfx-rs/wgpu/issues/1986
-self.Window = WorkerGlobalScope
-
 self.onmessage = async ({ data: { type, payload } }) => {
   switch (type) {
     case CANVAS:

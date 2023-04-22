@@ -62,16 +62,16 @@ jobs:
 
       - name: Run wasm-opt optimization
         run: |
-          wget https://github.com/WebAssembly/binaryen/releases/download/version_111/binaryen-version_111-x86_64-linux.tar.gz
-          tar zxf binaryen-version_111-x86_64-linux.tar.gz
-          ./binaryen-version_111/bin/wasm-opt -Os -o pkg/wgpu_layers_bg.wasm pkg/wgpu_layers_bg.wasm
+          wget https://github.com/WebAssembly/binaryen/releases/download/version_112/binaryen-version_112-x86_64-linux.tar.gz
+          tar zxf binaryen-version_112-x86_64-linux.tar.gz
+          ./binaryen-version_112/bin/wasm-opt -Os -o pkg/wgpu_layers_bg.wasm pkg/wgpu_layers_bg.wasm
 
       - name: Check wasm artifact size
         run: |
           brotli -Z pkg/wgpu_layers_bg.wasm
           gzip -k pkg/wgpu_layers_bg.wasm
           ls -lh pkg/
-          [[ $(stat -c %s pkg/wgpu_layers_bg.wasm.br) -lt 100000 ]]
+          [[ $(stat -c %s pkg/wgpu_layers_bg.wasm.br) -lt 110000 ]]
 
       - name: Post build environemnt
         if: always()
