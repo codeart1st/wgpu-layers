@@ -226,11 +226,10 @@ mod tests {
       env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
     );
 
-    let instance =
-      wgpu::Instance::new(wgpu::InstanceDescriptor {
-        backends: wgpu::util::backend_bits_from_env().unwrap_or(wgpu::Backends::all()),
-        dx12_shader_compiler: wgpu::util::dx12_shader_compiler_from_env().unwrap_or_default()
-      });
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+      backends: wgpu::util::backend_bits_from_env().unwrap_or(wgpu::Backends::all()),
+      dx12_shader_compiler: wgpu::util::dx12_shader_compiler_from_env().unwrap_or_default(),
+    });
 
     let adapter = instance
       .request_adapter(&wgpu::RequestAdapterOptions {

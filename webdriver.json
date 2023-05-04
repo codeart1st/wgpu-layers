@@ -1,5 +1,6 @@
 {
   "moz:firefoxOptions": {
+    "binary": "firefox-trunk",
     "prefs": {
       "dom.webgpu.enabled": true
     },

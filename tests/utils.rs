@@ -2,7 +2,6 @@
 #![feature(thread_local)]
 #![cfg(target_arch = "wasm32")]
 
-use log::info;
 use std::cell::RefCell;
 use std::sync::Once;
 use wasm_bindgen::prelude::*;
@@ -11,8 +10,6 @@ use wasm_bindgen_futures::JsFuture;
 use web_sys::HtmlCanvasElement;
 
 pub const CANVAS_SIZE: (u32, u32) = (512, 512);
-
-const BASE64_PREFIX: &str = "data:image/png;base64,";
 
 static INIT: Once = Once::new();
 
@@ -41,9 +38,12 @@ pub fn initialize() {
     let style = canvas.style();
 
     body.append_child(&canvas).unwrap();
+
     style.set_property("position", "absolute").unwrap();
     style.set_property("top", "1em").unwrap();
     style.set_property("right", "1em").unwrap();
+
+    canvas.set_id("test");
 
     let canvas: web_sys::HtmlCanvasElement = canvas
       .dyn_into::<web_sys::HtmlCanvasElement>()
@@ -58,7 +58,7 @@ pub fn initialize() {
   });
 }
 
-pub async fn canvas_as_data_url(canvas: &HtmlCanvasElement) -> JsValue {
+pub async fn get_canvas_image_data(canvas: &HtmlCanvasElement) -> Vec<u8> {
   let promise = js_sys::Promise::new(&mut move |resolve, _| {
     let cb: Closure<dyn Fn(web_sys::Blob)> = Closure::wrap(Box::new(move |blob| {
       resolve.call1(&JsValue::NULL, &JsValue::from(blob)).unwrap();
@@ -74,18 +74,22 @@ pub async fn canvas_as_data_url(canvas: &HtmlCanvasElement) -> JsValue {
     let file_reader = std::rc::Rc::new(web_sys::FileReader::new().unwrap());
     let file_reader_cb = file_reader.clone();
 
-    let cb: Closure<dyn Fn(web_sys::Blob)> = Closure::wrap(Box::new(move |event| {
-      info!("{:?}", event);
+    let cb: Closure<dyn Fn(web_sys::Blob)> = Closure::wrap(Box::new(move |_| {
       let data_url = file_reader_cb.result().unwrap();
       resolve.call1(&JsValue::NULL, &data_url).unwrap();
     }));
 
     file_reader.set_onload(Some(cb.as_ref().unchecked_ref()));
-    file_reader.read_as_data_url(&blob).unwrap();
+    file_reader.read_as_array_buffer(&blob).unwrap();
 
     cb.forget(); // leaking
   });
-  JsFuture::from(promise).await.unwrap()
+
+  let buffer = js_sys::Uint8Array::new(&JsFuture::from(promise).await.unwrap());
+  let mut result = vec![0; buffer.length() as usize];
+  buffer.copy_to(&mut result[..]);
+
+  result
 }
 
 pub async fn timeout(timeout: i32) {
@@ -110,11 +114,4 @@ pub fn get_view_matrix() -> Vec<f32> {
     0.0, 0.0, 1.0, 0.0,
     -0.975_147_84, -4.825_174, 0.0, 1.0,
   ]
-}
-
-pub fn get_snapshot(base64: &str) -> String {
-  [BASE64_PREFIX, base64]
-    .join("")
-    .replace('_', "/")
-    .replace('-', "+")
 }

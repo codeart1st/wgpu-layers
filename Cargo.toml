@@ -15,7 +15,7 @@ multithreaded = []
 
 [dependencies]
 log = "0.4.17"
-wgpu = { git = "https://github.com/grovesNL/wgpu", rev = "9a842a2" }
+wgpu = { git = "https://github.com/gfx-rs/wgpu", rev = "66c029f" }
 rayon = "1.7.0"
 futures = "0.3.27"
 geo-types = "0.7.9"
@@ -47,7 +47,7 @@ winit = "0.28.3"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.34"
-include-base64 = "0.1.0"
+pdqhash = "0.1.1"
 js-sys = "0.3.61"
 
 [build-dependencies]

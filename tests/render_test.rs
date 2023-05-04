@@ -27,15 +27,22 @@ async fn osm_pbf() {
 
   // act
   wgpu_layers::render(get_view_matrix(), vec![CANVAS_SIZE.0, CANVAS_SIZE.1]);
-  timeout(10).await; // wait for compute shader
+  timeout(200).await; // wait for compute shader
   wgpu_layers::render(get_view_matrix(), vec![CANVAS_SIZE.0, CANVAS_SIZE.1]);
+  timeout(100).await; // wait to render
 
   // assert
-  let result = canvas_as_data_url(canvas).await;
-  let expect = get_snapshot(include_base64::include_base64!(
-    "tests/snapshots/render_test_osm_pbf.png"
-  ));
-  assert_eq!(result.as_string().unwrap(), expect);
+  let image_data = get_canvas_image_data(canvas).await;
+  let image = pdqhash::image::load_from_memory(&image_data[..]).unwrap();
+  let (hash, _) = pdqhash::generate_pdq_full_size(&image);
+
+  assert_eq!(
+    [
+      110, 147, 181, 199, 72, 220, 37, 190, 238, 220, 47, 28, 184, 128, 194, 108, 153, 177, 194,
+      237, 155, 33, 200, 131, 34, 47, 24, 147, 102, 238, 119, 176
+    ],
+    hash
+  );
 }
 
 #[wasm_bindgen_test]
@@ -49,11 +56,18 @@ async fn empty() {
 
   // act
   wgpu_layers::render(get_view_matrix(), vec![CANVAS_SIZE.0, CANVAS_SIZE.1]);
+  timeout(100).await; // wait to render
 
   // assert
-  let result = canvas_as_data_url(canvas).await;
-  let expect = get_snapshot(include_base64::include_base64!(
-    "tests/snapshots/render_test_empty.png"
-  ));
-  assert_eq!(result.as_string().unwrap(), expect);
+  let image_data = get_canvas_image_data(canvas).await;
+  let image = pdqhash::image::load_from_memory(&image_data[..]).unwrap();
+  let (hash, _) = pdqhash::generate_pdq_full_size(&image);
+
+  assert_eq!(
+    [
+      171, 170, 84, 117, 171, 170, 84, 81, 171, 138, 84, 84, 171, 170, 171, 138, 171, 138, 84, 81,
+      85, 255, 84, 113, 171, 174, 84, 84, 171, 170, 84, 85
+    ],
+    hash
+  );
 }

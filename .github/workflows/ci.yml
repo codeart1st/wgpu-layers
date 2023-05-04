@@ -112,8 +112,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        #    browser: [chrome, firefox]
-        browser: [chrome]
+        browser: [chrome, firefox]
     steps:
       - name: Checkout repository and submodules
         uses: actions/checkout@v3.5.2
@@ -127,15 +126,19 @@ jobs:
       - name: Use libegl-mesa0 latest
         uses: ./.github/actions/install-graphics-driver
 
-      #- name: Use firefox nightly
-      #  if: matrix.browser == 'firefox'
-      #  run: |
-      #    sudo add-apt-repository ppa:ubuntu-mozilla-daily/ppa
-      #    sudo apt-get update
-      #    sudo apt-get install firefox-trunk
+      - name: Use firefox nightly
+        if: matrix.browser == 'firefox'
+        run: |
+          sudo add-apt-repository ppa:ubuntu-mozilla-daily/ppa
+          sudo apt-get update
+          sudo apt-get install firefox-trunk
 
-      #- run: /usr/bin/firefox-trunk -version
       - name: Print browser version
+        if: matrix.browser == 'firefox'
+        run: firefox-trunk -version
+
+      - name: Print browser version
+        if: matrix.browser == 'chrome'
         run: google-chrome --version
 
       - name: Run wasm-pack test

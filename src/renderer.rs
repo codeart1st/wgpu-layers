@@ -47,16 +47,18 @@ pub trait ToSurface {
   /// - Raw Window Handle must be a valid object to create a surface upon and
   ///   must remain valid for the lifetime of the returned surface.
   /// - If not called on the main thread, metal backend will panic.
-  unsafe fn create_surface(&self, instance: &wgpu::Instance) -> Result<wgpu::Surface, wgpu::CreateSurfaceError>;
+  unsafe fn create_surface(
+    &self,
+    instance: &wgpu::Instance,
+  ) -> Result<wgpu::Surface, wgpu::CreateSurfaceError>;
 }
 
 impl Renderer {
   pub async fn new<W: ToSurface>(window: &W, (width, height): (u32, u32)) -> Self {
-    let instance =
-      wgpu::Instance::new(wgpu::InstanceDescriptor {
-        backends: wgpu::util::backend_bits_from_env().unwrap_or(wgpu::Backends::all()),
-        dx12_shader_compiler: wgpu::util::dx12_shader_compiler_from_env().unwrap_or_default()
-      });
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+      backends: wgpu::util::backend_bits_from_env().unwrap_or(wgpu::Backends::all()),
+      dx12_shader_compiler: wgpu::util::dx12_shader_compiler_from_env().unwrap_or_default(),
+    });
 
     let swapchain;
     unsafe {
@@ -101,23 +103,37 @@ impl Renderer {
 
     let swapchain_capabilities = swapchain.get_capabilities(&adapter);
 
-    info!("supported surface formats: {:?}", swapchain_capabilities.formats);
+    info!(
+      "supported surface formats: {:?}",
+      swapchain_capabilities.formats
+    );
 
-    let texture_format = if swapchain_capabilities.formats.contains(&PREFERRED_TEXTURE_FORMAT) {
+    let texture_format = if swapchain_capabilities
+      .formats
+      .contains(&PREFERRED_TEXTURE_FORMAT)
+    {
       PREFERRED_TEXTURE_FORMAT
     } else {
-      swapchain_capabilities.formats
+      swapchain_capabilities
+        .formats
         .first()
         .expect("Can't get texture format for surface.")
         .to_owned()
     };
 
-    info!("supported alpha modes: {:?}", swapchain_capabilities.alpha_modes);
+    info!(
+      "supported alpha modes: {:?}",
+      swapchain_capabilities.alpha_modes
+    );
 
-    let _alpha_mode = if swapchain_capabilities.alpha_modes.contains(&PREFERRED_ALPHA_MODE) {
+    let alpha_mode = if swapchain_capabilities
+      .alpha_modes
+      .contains(&PREFERRED_ALPHA_MODE)
+    {
       PREFERRED_ALPHA_MODE
     } else {
-      swapchain_capabilities.alpha_modes
+      swapchain_capabilities
+        .alpha_modes
         .first()
         .expect("Can't get present mode for surface.")
         .to_owned()
@@ -129,7 +145,7 @@ impl Renderer {
       width,
       height,
       present_mode: wgpu::PresentMode::Fifo,
-      alpha_mode: wgpu::CompositeAlphaMode::PreMultiplied,
+      alpha_mode,
       view_formats: vec![],
     };
 
