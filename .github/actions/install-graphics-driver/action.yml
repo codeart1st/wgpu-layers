@@ -6,4 +6,4 @@ runs:
   steps:
     - name: Install mesa dependencies
       shell: bash
-      run: sudo apt-get update -qq && sudo apt-get install -y libegl1-mesa mesa-vulkan-drivers
+      run: sudo apt-get update -qq && sudo apt-get install -y libegl1-mesa mesa-vulkan-drivers xvfb

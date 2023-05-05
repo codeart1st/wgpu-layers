@@ -1,6 +1,6 @@
 {
   "moz:firefoxOptions": {
-    "binary": "firefox-trunk",
+    "binary": "/tmp/firefox-nightly/firefox",
     "prefs": {
       "dom.webgpu.enabled": true
     },

@@ -129,9 +129,8 @@ jobs:
       - name: Use firefox nightly
         if: matrix.browser == 'firefox'
         run: |
-          sudo add-apt-repository ppa:ubuntu-mozilla-daily/ppa
-          sudo apt-get update
-          sudo apt-get install firefox-trunk
+          wget https://download-installer.cdn.mozilla.net/pub/firefox/nightly/latest-mozilla-central/firefox-114.0a1.en-US.linux-x86_64.tar.bz2
+          mkdir /tmp/firefox-nightly && tar -xf *.tar.bz2 -C /tmp/firefox-nightly
 
       - name: Print browser version
         if: matrix.browser == 'firefox'
@@ -142,7 +141,7 @@ jobs:
         run: google-chrome --version
 
       - name: Run wasm-pack test
-        run: wasm-pack test --${{ matrix.browser }} --headless --release --features console_log,console_error_panic_hook --test '*'
+        run: xvfb-run -a -s "-screen 0 1920x1080x24" wasm-pack test --${{ matrix.browser }} --headless --release --features console_log,console_error_panic_hook --test '*'
 
       - name: Post build environemnt
         if: always()
