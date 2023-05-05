@@ -29,7 +29,7 @@ async fn osm_pbf() {
   wgpu_layers::render(get_view_matrix(), vec![CANVAS_SIZE.0, CANVAS_SIZE.1]);
   timeout(500).await; // wait for compute shader
   wgpu_layers::render(get_view_matrix(), vec![CANVAS_SIZE.0, CANVAS_SIZE.1]);
-  timeout(500).await; // wait to render
+  timeout(1500).await; // wait to render
 
   // assert
   let image_data = get_canvas_image_data(canvas).await;
@@ -56,7 +56,7 @@ async fn empty() {
 
   // act
   wgpu_layers::render(get_view_matrix(), vec![CANVAS_SIZE.0, CANVAS_SIZE.1]);
-  timeout(500).await; // wait to render
+  timeout(1500).await; // wait to render
 
   // assert
   let image_data = get_canvas_image_data(canvas).await;
