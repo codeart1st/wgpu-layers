@@ -133,10 +133,6 @@ jobs:
           mkdir /tmp/firefox-nightly && tar -xf *.tar.bz2 -C /tmp/firefox-nightly
 
       - name: Print browser version
-        if: matrix.browser == 'firefox'
-        run: firefox-trunk -version
-
-      - name: Print browser version
         if: matrix.browser == 'chrome'
         run: google-chrome --version
 
