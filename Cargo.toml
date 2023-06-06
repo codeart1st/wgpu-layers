@@ -15,7 +15,7 @@ multithreaded = []
 
 [dependencies]
 log = "0.4.17"
-wgpu = { git = "https://github.com/gfx-rs/wgpu", rev = "66c029f" }
+wgpu = "0.16.1"
 rayon = "1.7.0"
 futures = "0.3.27"
 geo-types = "0.7.9"
