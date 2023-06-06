@@ -38,9 +38,6 @@ export class OffscreenTileLayer extends Tile {
         case READY:
           const offscreen = offscreenCanvas.transferControlToOffscreen()
 
-          offscreen.width = offscreenCanvas.clientWidth
-          offscreen.height = offscreenCanvas.clientHeight
-
           this.worker.postMessage({
             type: CANVAS, payload: {
               canvas: offscreen

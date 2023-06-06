@@ -28,10 +28,10 @@ pub struct Renderer {
   line_tessellation: LineTessellation,
 
   /// wgpu surface
-  surface: wgpu::Surface,
+  swapchain: wgpu::Surface,
 
   /// wgpu surfaceconfiguration
-  surface_config: wgpu::SurfaceConfiguration,
+  swapchain_config: wgpu::SurfaceConfiguration,
 
   pub ressource_manager: RessourceManager,
 }
@@ -139,7 +139,7 @@ impl Renderer {
         .to_owned()
     };
 
-    let surface_config = wgpu::SurfaceConfiguration {
+    let swapchain_config = wgpu::SurfaceConfiguration {
       usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
       format: texture_format,
       width,
@@ -149,7 +149,7 @@ impl Renderer {
       view_formats: vec![],
     };
 
-    swapchain.configure(&device, &surface_config);
+    swapchain.configure(&device, &swapchain_config);
 
     let line_tessellation = LineTessellation::new((device.clone(), queue.clone()));
 
@@ -160,8 +160,8 @@ impl Renderer {
       texture_format,
       view: View::new((width, height), &mut ressource_manager),
       line_tessellation,
-      surface: swapchain,
-      surface_config,
+      swapchain,
+      swapchain_config,
       ressource_manager,
     }
   }
@@ -173,9 +173,9 @@ impl Renderer {
   pub fn set_size(&mut self, (width, height): (u32, u32)) {
     let (device, _) = &self.device_queue;
 
-    self.surface_config.width = width;
-    self.surface_config.height = height;
-    self.surface.configure(device, &self.surface_config);
+    self.swapchain_config.width = width;
+    self.swapchain_config.height = height;
+    self.swapchain.configure(device, &self.swapchain_config);
     self.view.set_size((width, height));
   }
 
@@ -193,7 +193,7 @@ impl Renderer {
       device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
     let surface_texture = self
-      .surface
+      .swapchain
       .get_current_texture()
       .expect("Can't get current texture");
 

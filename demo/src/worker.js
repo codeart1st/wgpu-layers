@@ -3,13 +3,12 @@ import { create, makeInverse } from 'ol/transform'
 
 import { READY, STARTED, CANVAS, SHARED_ARRAY_BUFFER, PBF_DATA } from './types'
 
-let canvas, shared_state, ready = false
+let shared_state, ready = false
 
 self.onmessage = async ({ data: { type, payload } }) => {
   switch (type) {
     case CANVAS:
-      canvas = payload.canvas
-      await startWithOffscreenCanvas(canvas)
+      await startWithOffscreenCanvas(payload.canvas)
       self.postMessage({ type: STARTED })
       ready = true
       loop()
@@ -32,12 +31,8 @@ function loop() {
   const { size, viewState } = getFrameState()
 
   const [width, height] = size
-  if (canvas.width != width || canvas.height != height) {
-    canvas.width = width
-    canvas.height = height
-  }
   render(
-    getViewMatrix(viewState, canvas.width, canvas.height),
+    getViewMatrix(viewState, width, height),
     size
   )
 
