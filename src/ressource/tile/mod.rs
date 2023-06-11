@@ -1,8 +1,7 @@
 use std::{mem::size_of, num::NonZeroU64, sync::Arc};
 
 use log::info;
-
-use crate::feature::WithGeometry;
+use mvt_reader::feature::Feature;
 
 use super::{material::Material, view::View, BindGroupScope, RessourceManager};
 
@@ -162,9 +161,7 @@ where
 {
   fn new(ressource_manager: &RessourceManager, extent: [f32; 4]) -> Self;
 
-  fn add_features(&mut self, features: &mut Vec<F>, ressource_manager: &RessourceManager)
-  where
-    F: WithGeometry<geo_types::GeometryCollection<f32>>;
+  fn add_features(&mut self, features: &mut Vec<Feature>, ressource_manager: &RessourceManager);
 }
 
 impl TileManager {

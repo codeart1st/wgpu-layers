@@ -1,10 +1,8 @@
-use geo_types::Geometry::*;
+use geo_types::Geometry::{MultiPoint, Point};
 use log::info;
+use mvt_reader::feature::Feature;
 
-use crate::{
-  feature::WithGeometry,
-  ressource::{material::MaterialType, BindGroupScope, RessourceManager},
-};
+use crate::ressource::{material::MaterialType, BindGroupScope, RessourceManager};
 
 use super::{Bucket, BucketType, Tile, TileUniform};
 
@@ -60,40 +58,25 @@ impl<F> Bucket<F, { BucketType::Point }> for Tile {
     }
   }
 
-  fn add_features(&mut self, features: &mut Vec<F>, ressource_manager: &RessourceManager)
-  where
-    F: WithGeometry<geo_types::GeometryCollection<f32>>,
-  {
+  fn add_features(&mut self, features: &mut Vec<Feature>, ressource_manager: &RessourceManager) {
     for feature in features.iter() {
-      let geometry_collection = feature.get_geometry();
-      for geometry in geometry_collection.iter() {
-        match geometry {
-          Polygon(polygon) => {
-            let exterior = polygon.exterior();
-            let interior = polygon.interiors();
-            let mut vertex_count = exterior.0.len() - 1;
-            let mut rings = Vec::with_capacity(1 + interior.len());
-            rings.push(exterior);
-            interior.iter().for_each(|r| {
-              rings.push(r);
-              // ignore last coordinate (closed ring)
-              vertex_count += r.0.len() - 1;
-            });
-            let mut vertices = Vec::with_capacity(vertex_count * DIMENSIONS);
-            for ring in rings.iter() {
-              // ignore last coordinate (closed ring)
-              let end = ring.0.len() - 1;
-              let coordinate_slice = &ring.0[..end];
-              for coord in coordinate_slice.iter() {
-                vertices.push(coord.x);
-                vertices.push(coord.y);
-              }
-            }
-            self.vertex_buffer.append(&mut vertices);
+      match feature.get_geometry() {
+        Point(point) => {
+          let mut vertices = Vec::with_capacity(DIMENSIONS);
+          vertices.push(point.x());
+          vertices.push(point.y());
+          self.vertex_buffer.append(&mut vertices);
+        }
+        MultiPoint(multi_point) => {
+          let mut vertices = Vec::with_capacity(multi_point.0.len() * DIMENSIONS);
+          for point in multi_point.iter() {
+            vertices.push(point.x());
+            vertices.push(point.y());
           }
-          _ => {
-            info!("Geometry type currently not supported");
-          }
+          self.vertex_buffer.append(&mut vertices);
+        }
+        _ => {
+          info!("Geometry type currently not supported");
         }
       }
     }

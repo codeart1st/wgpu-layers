@@ -1,9 +1,8 @@
 #![allow(incomplete_features)]
 #![feature(adt_const_params)]
 
-use feature::Feature;
-use geo_types::GeometryCollection;
 use log::error;
+use mvt_reader::feature::Feature;
 use ressource::tile::{Bucket, BucketType, Tile};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -13,8 +12,8 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
-mod feature;
-mod parser;
+use geo_types::Geometry::{LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon};
+
 pub mod renderer;
 mod ressource;
 mod tessellation;
@@ -27,7 +26,7 @@ pub struct Instance {
 }
 
 struct Message {
-  parsed_features: Option<Vec<Feature<GeometryCollection<f32>>>>,
+  parsed_features: Vec<Feature>,
   extent: Vec<f32>,
 }
 
@@ -64,7 +63,7 @@ pub mod wasm {
   }
 
   #[wasm_bindgen(js_name = startWithOffscreenCanvas)]
-  pub async fn start_with_offscreencanvas(canvas: web_sys::OffscreenCanvas) {
+  pub async fn start_with_offscreencanvas(canvas: &web_sys::OffscreenCanvas) {
     #[cfg(feature = "console_error_panic_hook")]
     console_error_panic_hook::set_once();
 
@@ -74,7 +73,7 @@ pub mod wasm {
       Err(err) => log::error!("{}", err),
     }
 
-    super::init(&canvas, (canvas.width(), canvas.height())).await;
+    super::init(canvas, (canvas.width(), canvas.height())).await;
   }
 
   #[wasm_bindgen(js_name = startWithCanvas)]
@@ -115,55 +114,51 @@ pub fn render(view_matrix: Vec<f32>, new_size: Vec<u32>) {
 }
 
 #[cfg(target_arch = "wasm32")]
-fn get_buffers<F>(features: &[F]) -> (Vec<f32>, Vec<u32>)
-where
-  F: feature::WithGeometry<geo_types::GeometryCollection<f32>>,
-{
+fn get_buffers(features: &[Feature]) -> (Vec<f32>, Vec<u32>) {
   let mut all_vertices = vec![];
   let mut all_indices = vec![];
-  let mut offset = 0;
+
   for feature in features.iter() {
-    let geometry_collection = feature.get_geometry();
-    for geometry in geometry_collection.iter() {
-      match geometry {
-        geo_types::Geometry::Polygon(polygon) => {
-          let exterior = polygon.exterior();
-          let interior: &[geo_types::LineString<f32>] = &[]; //TODO: polygon.interiors();
-          let mut vertex_count = exterior.0.len() - 1;
-          let mut rings = Vec::with_capacity(1 + interior.len());
-          rings.push(exterior);
-          interior.iter().for_each(|r| {
-            rings.push(r);
-            // ignore last coordinate (closed ring)
-            vertex_count += r.0.len() - 1;
-          });
-          let mut vertices = Vec::with_capacity(vertex_count * DIMENSIONS);
-          let mut hole_indices = Vec::new();
-          let mut indices = Vec::new();
-          for (i, ring) in rings.iter().enumerate() {
-            // ignore last coordinate (closed ring)
-            let end = ring.0.len() - 1;
-            let coordinate_slice = &ring.0[..end];
-            for (i, coord) in coordinate_slice.iter().enumerate() {
-              vertices.push(coord.x);
-              vertices.push(coord.y);
-              indices.push(i as u32 + offset);
-            }
+    match feature.get_geometry() {
+      LineString(line) => {
+        let mut vertices = Vec::with_capacity(line.0.len() * DIMENSIONS);
+        let mut indices = Vec::with_capacity(line.0.len());
+        let offset = (all_vertices.len() / DIMENSIONS) as u32;
 
-            indices.push(offset); // close ring
-            indices.push(offset); // separate linestring from the next one
-            offset += coordinate_slice.len() as u32;
+        for (i, coord) in line.0.iter().enumerate() {
+          vertices.push(coord.x);
+          vertices.push(coord.y);
+          indices.push(i as u32 + offset);
+        }
 
-            if i < rings.len() - 1 {
-              hole_indices.push(vertices.len())
-            }
+        if let Some(last) = indices.last() {
+          indices.push(*last); // separate linestring from the next one
+        }
+
+        all_vertices.append(&mut vertices);
+        all_indices.append(&mut indices);
+      }
+      MultiLineString(multi_line) => {
+        for line in multi_line.0.iter() {
+          let mut vertices = Vec::with_capacity(line.0.len() * DIMENSIONS);
+          let mut indices = Vec::with_capacity(line.0.len());
+          let offset = (all_vertices.len() / DIMENSIONS) as u32;
+          for (i, coord) in line.0.iter().enumerate() {
+            vertices.push(coord.x);
+            vertices.push(coord.y);
+            indices.push(i as u32 + offset);
           }
+
+          if let Some(last) = indices.last() {
+            indices.push(*last); // separate linestring from the next one
+          }
+
           all_vertices.append(&mut vertices);
           all_indices.append(&mut indices);
         }
-        _ => {
-          log::info!("Geometry type currently not supported");
-        }
+      }
+      _ => {
+        log::info!("Geometry type currently not supported");
       }
     }
   }
@@ -174,71 +169,69 @@ fn process_tile_parser_queue() {
   TILE_PARSER_QUEUE.with(|(_, receiver)| loop {
     match receiver.try_recv() {
       Ok(msg) => {
-        if let Some(mut parsed_features) = msg.parsed_features {
-          if parsed_features.is_empty() {
-            return;
-          }
-
-          INSTANCE.with(|instance| {
-            let extent: [f32; 4] = msg.extent.try_into().unwrap();
-
-            #[cfg(target_arch = "wasm32")]
-            {
-              let (vertices, indices) = get_buffers(&parsed_features[..]);
-
-              let clone = instance.renderer.clone();
-              let tiles = instance.tiles.clone();
-
-              #[allow(clippy::await_holding_refcell_ref)]
-              wasm_bindgen_futures::spawn_local(async move {
-                let mut reference = clone.borrow_mut();
-                let renderer = reference.as_mut().unwrap();
-                let (vertices_buffer, indices_buffer) =
-                  renderer.compute(&vertices[..], &indices[..]).await;
-
-                let mut tile = renderer.create_tile::<Feature<geo_types::GeometryCollection<f32>>>(
-                  BucketType::Line,
-                  extent,
-                );
-                tile.add_buffers(vertices_buffer, indices_buffer);
-                tiles.borrow_mut().push(tile);
-              });
-            }
-            let mut reference = instance.renderer.try_borrow_mut().unwrap();
-            let renderer = reference.as_mut().unwrap();
-            let mut tile = renderer
-              .create_tile::<Feature<geo_types::GeometryCollection<f32>>>(BucketType::Fill, extent);
-
-            if tile.get_bucket_type() == BucketType::Fill {
-              <Tile as Bucket<
-                Feature<geo_types::GeometryCollection<f32>>,
-                { BucketType::Fill },
-              >>::add_features(
-                &mut tile, &mut parsed_features, &renderer.ressource_manager
-              );
-            }
-
-            instance.tiles.borrow_mut().push(tile);
-
-            {
-              let mut tile = renderer.create_tile::<Feature<geo_types::GeometryCollection<f32>>>(
-                BucketType::Point,
-                extent,
-              );
-
-              if tile.get_bucket_type() == BucketType::Point {
-                <Tile as Bucket<
-                  Feature<geo_types::GeometryCollection<f32>>,
-                  { BucketType::Point },
-                >>::add_features(
-                  &mut tile, &mut parsed_features, &renderer.ressource_manager
-                );
-              }
-
-              instance.tiles.borrow_mut().push(tile);
-            }
-          });
+        let mut parsed_features = msg.parsed_features;
+        if parsed_features.is_empty() {
+          return;
         }
+
+        INSTANCE.with(|instance| {
+          let extent: [f32; 4] = msg.extent.try_into().unwrap();
+          let mut reference = instance.renderer.try_borrow_mut().unwrap();
+          let renderer = reference.as_mut().unwrap();
+
+          if let Some(feature) = parsed_features.get(0) {
+            match feature.get_geometry() {
+              &Point(_) | &MultiPoint(_) => {
+                let mut tile = renderer.create_tile::<Feature>(BucketType::Point, extent);
+
+                if tile.get_bucket_type() == BucketType::Point {
+                  <Tile as Bucket<Feature, { BucketType::Point }>>::add_features(
+                    &mut tile,
+                    &mut parsed_features,
+                    &renderer.ressource_manager,
+                  );
+                }
+
+                instance.tiles.borrow_mut().push(tile);
+              }
+              &LineString(_) | &MultiLineString(_) => {
+                #[cfg(target_arch = "wasm32")]
+                {
+                  let (vertices, indices) = get_buffers(&parsed_features[..]);
+
+                  let clone = instance.renderer.clone();
+                  let tiles = instance.tiles.clone();
+
+                  #[allow(clippy::await_holding_refcell_ref)]
+                  wasm_bindgen_futures::spawn_local(async move {
+                    let mut reference = clone.borrow_mut();
+                    let renderer = reference.as_mut().unwrap();
+                    let (vertices_buffer, indices_buffer) =
+                      renderer.compute(&vertices[..], &indices[..]).await;
+
+                    let mut tile = renderer.create_tile::<Feature>(BucketType::Line, extent);
+                    tile.add_buffers(vertices_buffer, indices_buffer);
+                    tiles.borrow_mut().push(tile);
+                  });
+                }
+              }
+              &Polygon(_) | &MultiPolygon(_) => {
+                let mut tile = renderer.create_tile::<Feature>(BucketType::Fill, extent);
+
+                if tile.get_bucket_type() == BucketType::Fill {
+                  <Tile as Bucket<Feature, { BucketType::Fill }>>::add_features(
+                    &mut tile,
+                    &mut parsed_features,
+                    &renderer.ressource_manager,
+                  );
+                }
+
+                instance.tiles.borrow_mut().push(tile);
+              }
+              _ => (),
+            }
+          }
+        });
       }
       Err(err) => match err {
         Disconnected => {
@@ -259,18 +252,14 @@ pub async fn add_pbf_tile_data(pbf: Vec<u8>, _tile_coord: Vec<u32>, extent: Vec<
     let sender = sender.clone();
 
     let parse = move || {
-      let parser = parser::Parser::new(pbf).expect("parse error");
+      let reader = mvt_reader::Reader::new(pbf).expect("parse error");
+      let layer_names = reader.get_layer_names().unwrap();
 
-      let layer_index_option = parser
-        .get_layer_names()
-        .iter()
-        .position(|layer_name| layer_name == "land");
-
-      if let Some(layer_index) = layer_index_option {
+      for (i, _) in layer_names.iter().enumerate() {
         sender
           .send(Message {
-            parsed_features: parser.get_features(layer_index),
-            extent,
+            parsed_features: reader.get_features(i).unwrap(),
+            extent: extent.clone(),
           })
           .unwrap();
       }

@@ -17,5 +17,7 @@
   ],
   "module": "wgpu_layers.js",
   "types": "wgpu_layers.d.ts",
-  "sideEffects": false
+  "sideEffects": [
+    "./snippets/*"
+  ]
 }
