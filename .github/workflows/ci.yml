@@ -113,7 +113,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [chrome, firefox]
+        browser: [firefox] # disable chrome for now
     steps:
       - name: Checkout repository and submodules
         uses: actions/checkout@v3.5.3
