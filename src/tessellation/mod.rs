@@ -283,7 +283,7 @@ mod tests {
       Err(error) => match error {
         Ok(_) => (),
         Err(error) => {
-          panic!("{:?}", error)
+          panic!("{error:?}")
         }
       },
     });
@@ -299,9 +299,9 @@ mod tests {
           } // out of scope
           dest_buffer.unmap();
         }
-        Err(error) => panic!("{:?}", error),
+        Err(error) => panic!("{error:?}"),
       },
-      Err(error) => panic!("{:?}", error),
+      Err(error) => panic!("{error:?}"),
     }
   }
 
