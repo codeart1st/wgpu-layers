@@ -49,7 +49,7 @@ winit = "0.28.6"
 [dev-dependencies]
 wasm-bindgen-test = "0.3.36"
 pdqhash = "0.1.1"
-js-sys = "0.3.63"
+js-sys = "0.3.64"
 
 [build-dependencies]
 prost-build = "0.11.9"
