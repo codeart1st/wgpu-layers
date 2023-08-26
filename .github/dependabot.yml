@@ -7,6 +7,9 @@ updates:
       interval: daily
     target-branch: "develop"
     open-pull-requests-limit: 10
+    groups:
+      development-dependencies:
+        dependency-type: "development"
 
   - package-ecosystem: npm
     directory: /demo
@@ -14,6 +17,11 @@ updates:
       interval: daily
     target-branch: "develop"
     open-pull-requests-limit: 10
+    groups:
+      development-dependencies:
+        dependency-type: "development"
+      production-dependencies:
+        dependency-type: "production"
 
   - package-ecosystem: github-actions
     directory: /
@@ -21,6 +29,9 @@ updates:
       interval: daily
     target-branch: "develop"
     open-pull-requests-limit: 10
+    groups:
+      actions:
+        dependency-type: "production"
 
   - package-ecosystem: github-actions
     directory: /.github/actions/install-graphics-driver
@@ -28,6 +39,9 @@ updates:
       interval: daily
     target-branch: "develop"
     open-pull-requests-limit: 10
+    groups:
+      actions:
+        dependency-type: "production"
 
   - package-ecosystem: github-actions
     directory: /.github/actions/prepare-build-env
@@ -35,6 +49,9 @@ updates:
       interval: daily
     target-branch: "develop"
     open-pull-requests-limit: 10
+    groups:
+      actions:
+        dependency-type: "production"
 
   - package-ecosystem: github-actions
     directory: /.github/actions/post-build-env
@@ -42,3 +59,6 @@ updates:
       interval: daily
     target-branch: "develop"
     open-pull-requests-limit: 10
+    groups:
+      actions:
+        dependency-type: "production"
