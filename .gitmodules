@@ -1,3 +1,0 @@
-[submodule "spec/vector-tile-spec"]
-	path = spec/vector-tile-spec
-	url = https://github.com/mapbox/vector-tile-spec
