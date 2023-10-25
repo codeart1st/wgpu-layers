@@ -15,7 +15,7 @@ multithreaded = []
 
 [dependencies]
 log = "0.4.20"
-wgpu = "0.17.1"
+wgpu = "0.18.0"
 rayon = "1.8.0"
 futures = "0.3.27"
 geo-types = "0.7.11"
