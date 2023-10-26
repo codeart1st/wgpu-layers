@@ -57,7 +57,7 @@ impl Renderer {
   pub async fn new<W: ToSurface>(window: &W, (width, height): (u32, u32)) -> Self {
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
       backends: wgpu::util::backend_bits_from_env().unwrap_or(wgpu::Backends::all()),
-      dx12_shader_compiler: wgpu::util::dx12_shader_compiler_from_env().unwrap_or_default(),
+      ..Default::default()
     });
 
     let swapchain;
@@ -214,10 +214,10 @@ impl Renderer {
               b: 0.58,
               a: 1.0,
             }),
-            store: true,
+            store: wgpu::StoreOp::Store,
           },
         })],
-        depth_stencil_attachment: None,
+        ..Default::default()
       });
     } // out of scope
 
@@ -229,10 +229,10 @@ impl Renderer {
           resolve_target: None,
           ops: wgpu::Operations {
             load: wgpu::LoadOp::Load,
-            store: true,
+            store: wgpu::StoreOp::Store,
           },
         })],
-        depth_stencil_attachment: None,
+        ..Default::default()
       });
 
       self.view.set(&mut render_pass, queue);

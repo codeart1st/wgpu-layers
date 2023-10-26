@@ -190,10 +190,9 @@ impl LineTessellation {
     );
 
     let mut command_encoder =
-      device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+      device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
     {
-      let mut pass =
-        command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
+      let mut pass = command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor::default());
 
       pass.set_pipeline(&self.pipeline);
       pass.set_bind_group(0, &bind_group, &[]);
@@ -228,7 +227,7 @@ mod tests {
 
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
       backends: wgpu::util::backend_bits_from_env().unwrap_or(wgpu::Backends::all()),
-      dx12_shader_compiler: wgpu::util::dx12_shader_compiler_from_env().unwrap_or_default(),
+      ..Default::default()
     });
 
     let adapter = instance
