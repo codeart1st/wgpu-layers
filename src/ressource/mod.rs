@@ -10,7 +10,7 @@ pub mod tile;
 pub mod view;
 
 #[derive(Eq, Hash, PartialEq)]
-pub(self) enum BindGroupScope {
+enum BindGroupScope {
   Global = 0,
   Material = 1,
   Model = 2,
@@ -27,7 +27,7 @@ impl BindGroupScope {
 }
 
 #[derive(Eq, Hash, PartialEq)]
-pub(self) enum ShaderModuleScope {
+enum ShaderModuleScope {
   Common,
 }
 
@@ -75,6 +75,7 @@ impl RessourceManager {
     scope: ShaderModuleScope,
     code: Cow<str>,
   ) -> Arc<wgpu::ShaderModule> {
+    #[allow(clippy::arc_with_non_send_sync)]
     let shader_module = Arc::new(
       self
         .device

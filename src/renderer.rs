@@ -98,7 +98,10 @@ impl Renderer {
 
     info!("device: {:?}", device);
 
+    #[allow(clippy::arc_with_non_send_sync)]
     let device = Arc::new(device);
+
+    #[allow(clippy::arc_with_non_send_sync)]
     let queue = Arc::new(queue);
 
     let swapchain_capabilities = swapchain.get_capabilities(&adapter);

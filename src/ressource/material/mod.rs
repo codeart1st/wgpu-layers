@@ -1,4 +1,4 @@
-use std::{collections::HashMap, mem, sync::Arc};
+use std::{collections::HashMap, marker::ConstParamTy, mem, sync::Arc};
 
 use super::{BindGroupScope, RessourceManager, ShaderModuleScope};
 
@@ -21,7 +21,7 @@ struct Style {
   _pad: [u32; 3],
 }
 
-#[derive(PartialEq, Eq, Hash, Clone)]
+#[derive(PartialEq, Eq, Hash, Clone, ConstParamTy)]
 pub enum MaterialType {
   Fill,
   Line,
@@ -95,15 +95,25 @@ impl MaterialManager {
       .materials
       .entry(material_type.clone())
       .or_insert(match material_type {
-        MaterialType::Fill => Arc::new(<Material as CreatePipeline<{ MaterialType::Fill }>>::new(
-          ressource_manager,
-          &self.shader_module,
-        )),
-        MaterialType::Line => Arc::new(<Material as CreatePipeline<{ MaterialType::Line }>>::new(
-          ressource_manager,
-          &self.shader_module,
-        )),
-        MaterialType::Point => {
+        MaterialType::Fill =>
+        {
+          #[allow(clippy::arc_with_non_send_sync)]
+          Arc::new(<Material as CreatePipeline<{ MaterialType::Fill }>>::new(
+            ressource_manager,
+            &self.shader_module,
+          ))
+        }
+        MaterialType::Line =>
+        {
+          #[allow(clippy::arc_with_non_send_sync)]
+          Arc::new(<Material as CreatePipeline<{ MaterialType::Line }>>::new(
+            ressource_manager,
+            &self.shader_module,
+          ))
+        }
+        MaterialType::Point =>
+        {
+          #[allow(clippy::arc_with_non_send_sync)]
           Arc::new(<Material as CreatePipeline<{ MaterialType::Point }>>::new(
             ressource_manager,
             &self.shader_module,

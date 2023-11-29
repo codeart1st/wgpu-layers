@@ -102,7 +102,7 @@ impl LineTessellation {
     // generate 4 vertices for each edge and 6 indices for each edge
     let line_vertices_buffer_size =
       (std::mem::size_of::<OutputVertex>() * (indices.len()) * 4) as u64;
-    let line_indices_buffer_size = (std::mem::size_of::<u32>() * (indices.len()) * 6) as u64;
+    let line_indices_buffer_size = (std::mem::size_of_val(indices) * 6) as u64;
 
     [
       device.create_buffer_init(&wgpu::util::BufferInitDescriptor {

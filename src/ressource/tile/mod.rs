@@ -1,4 +1,4 @@
-use std::{mem::size_of, num::NonZeroU64, sync::Arc};
+use std::{marker::ConstParamTy, mem::size_of, num::NonZeroU64, sync::Arc};
 
 use log::info;
 use mvt_reader::feature::Feature;
@@ -13,7 +13,7 @@ const DIMENSIONS: usize = 2;
 
 const TILE_SIZE: f32 = 4096.0;
 
-#[derive(PartialEq, Eq, Clone)]
+#[derive(PartialEq, Eq, Clone, ConstParamTy)]
 pub enum BucketType {
   Fill,
   Line,
