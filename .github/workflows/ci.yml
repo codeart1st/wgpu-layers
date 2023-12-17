@@ -130,7 +130,7 @@ jobs:
       - name: Use firefox nightly
         if: matrix.browser == 'firefox'
         run: |
-          wget https://download-installer.cdn.mozilla.net/pub/firefox/nightly/latest-mozilla-central/firefox-121.0a1.en-US.linux-x86_64.tar.bz2
+          wget https://download-installer.cdn.mozilla.net/pub/firefox/nightly/latest-mozilla-central/firefox-122.0a1.en-US.linux-x86_64.tar.bz2
           mkdir /tmp/firefox-nightly && tar -xf *.tar.bz2 -C /tmp/firefox-nightly
 
       - name: Print browser version
