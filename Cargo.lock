@@ -2079,9 +2079,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-rayon"
-version = "1.1.2"
+version = "1.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64740c832bba16e46e8793f61f53e4cefdfae998ff153eb8fa3529a9dd542f4d"
+checksum = "f0a399126782d706247a5f8fb033c3976e9edd3164664d7c97162923435cc972"
 dependencies = [
  "js-sys",
  "rayon-core",
