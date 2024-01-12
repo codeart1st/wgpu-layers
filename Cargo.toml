@@ -48,7 +48,7 @@ winit = "0.28.7"
 [dev-dependencies]
 wasm-bindgen-test = "0.3.39"
 pdqhash = "0.1.1"
-js-sys = "0.3.66"
+js-sys = "0.3.67"
 
 [profile.release]
 opt-level = "s"
