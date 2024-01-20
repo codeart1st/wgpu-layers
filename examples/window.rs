@@ -1,19 +1,23 @@
 #[cfg(not(target_arch = "wasm32"))]
 mod example {
   use log::info;
+  use std::sync::Arc;
 
   struct MapWindow {
-    window: winit::window::Window,
+    window: Arc<winit::window::Window>,
   }
 
   impl wgpu_layers::renderer::ToSurface for MapWindow {
-    unsafe fn create_surface(&self, instance: &wgpu::Instance) -> Result<wgpu::Surface, wgpu::CreateSurfaceError> {
-      instance.create_surface(&self.window)
+    fn create_surface(
+      &self,
+      instance: &wgpu::Instance,
+    ) -> Result<wgpu::Surface<'static>, wgpu::CreateSurfaceError> {
+      instance.create_surface(wgpu::SurfaceTarget::Window(Box::new(self.window.clone())))
     }
   }
 
   fn create_map_window() -> (winit::event_loop::EventLoop<()>, MapWindow) {
-    let event_loop = winit::event_loop::EventLoop::new();
+    let event_loop = winit::event_loop::EventLoop::new().unwrap();
     let size = winit::dpi::PhysicalSize::new(512, 512);
     let window_builder = winit::window::WindowBuilder::new()
       .with_title("wgpu-map")
@@ -27,7 +31,12 @@ mod example {
       .build(&event_loop)
       .expect("Window can't be created");
 
-    (event_loop, MapWindow { window })
+    (
+      event_loop,
+      MapWindow {
+        window: Arc::new(window),
+      },
+    )
   }
 
   async fn start(
@@ -48,52 +57,42 @@ mod example {
 
     info!("renderer init");
 
-    event_loop.run(move |event, _, control_flow| match event {
-      winit::event::Event::WindowEvent {
-        event: winit::event::WindowEvent::CloseRequested,
-        ..
-      } => *control_flow = winit::event_loop::ControlFlow::Exit,
-      winit::event::Event::WindowEvent {
-        event:
+    let _ = event_loop.run(move |event, elwt| {
+      if let winit::event::Event::WindowEvent { event, .. } = event {
+        match event {
+          winit::event::WindowEvent::CloseRequested => elwt.exit(),
           winit::event::WindowEvent::KeyboardInput {
-            input:
-              winit::event::KeyboardInput {
+            event:
+              winit::event::KeyEvent {
                 state: winit::event::ElementState::Pressed,
-                virtual_keycode,
+                logical_key,
                 ..
               },
             ..
+          } => match logical_key {
+            winit::keyboard::Key::Named(winit::keyboard::NamedKey::Enter) => elwt.exit(),
+            winit::keyboard::Key::Named(winit::keyboard::NamedKey::ArrowUp) => {}
+            winit::keyboard::Key::Named(winit::keyboard::NamedKey::ArrowDown) => {}
+            winit::keyboard::Key::Named(winit::keyboard::NamedKey::ArrowLeft) => {}
+            winit::keyboard::Key::Named(winit::keyboard::NamedKey::ArrowRight) => {}
+            winit::keyboard::Key::Named(winit::keyboard::NamedKey::PageUp) => {}
+            winit::keyboard::Key::Named(winit::keyboard::NamedKey::PageDown) => {}
+            _ => (),
           },
-        ..
-      } => match virtual_keycode {
-        Some(winit::event::VirtualKeyCode::Escape) => {
-          *control_flow = winit::event_loop::ControlFlow::Exit
+          winit::event::WindowEvent::Resized(_) => {}
+          winit::event::WindowEvent::RedrawRequested => {
+            #[rustfmt::skip]
+            let view_matrix = vec![
+              1.15142285e-7, -0.0, 0.0, 0.0,
+              0.0, 1.15142285e-7, 0.0, 0.0,
+              -0.27666306, -0.7963807, 1.0, 0.0,
+              0.0, 0.0, 0.0, 1.0,
+            ];
+            wgpu_layers::render(view_matrix, vec![size.width, size.height]);
+          }
+          _ => (),
         }
-        Some(winit::event::VirtualKeyCode::Up) => {}
-        Some(winit::event::VirtualKeyCode::Down) => {}
-        Some(winit::event::VirtualKeyCode::Left) => {}
-        Some(winit::event::VirtualKeyCode::Right) => {}
-        Some(winit::event::VirtualKeyCode::PageUp) => {}
-        Some(winit::event::VirtualKeyCode::PageDown) => {}
-        Some(winit::event::VirtualKeyCode::A) => {}
-        Some(winit::event::VirtualKeyCode::D) => {}
-        _ => (),
-      },
-      winit::event::Event::WindowEvent {
-        event: winit::event::WindowEvent::Resized(_),
-        ..
-      } => {}
-      winit::event::Event::MainEventsCleared => {
-        #[rustfmt::skip]
-        let view_matrix = vec![
-          1.15142285e-7, -0.0, 0.0, 0.0,
-          0.0, 1.15142285e-7, 0.0, 0.0,
-          -0.27666306, -0.7963807, 1.0, 0.0,
-          0.0, 0.0, 0.0, 1.0,
-        ];
-        wgpu_layers::render(view_matrix, vec![size.width, size.height]);
       }
-      _ => (),
     });
   }
 

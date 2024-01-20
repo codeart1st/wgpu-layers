@@ -28,7 +28,7 @@ pub struct Renderer {
   line_tessellation: LineTessellation,
 
   /// wgpu surface
-  swapchain: wgpu::Surface,
+  swapchain: wgpu::Surface<'static>,
 
   /// wgpu surfaceconfiguration
   swapchain_config: wgpu::SurfaceConfiguration,
@@ -37,20 +37,10 @@ pub struct Renderer {
 }
 
 pub trait ToSurface {
-  /// Creates a surface from a raw window handle.
-  ///
-  /// If the specified display and window handle are not supported by any of the backends, then the surface
-  /// will not be supported by any adapters.
-  ///
-  /// # Safety
-  ///
-  /// - Raw Window Handle must be a valid object to create a surface upon and
-  ///   must remain valid for the lifetime of the returned surface.
-  /// - If not called on the main thread, metal backend will panic.
-  unsafe fn create_surface(
+  fn create_surface(
     &self,
     instance: &wgpu::Instance,
-  ) -> Result<wgpu::Surface, wgpu::CreateSurfaceError>;
+  ) -> Result<wgpu::Surface<'static>, wgpu::CreateSurfaceError>;
 }
 
 impl Renderer {
@@ -60,13 +50,10 @@ impl Renderer {
       ..Default::default()
     });
 
-    let swapchain;
-    unsafe {
-      swapchain = match window.create_surface(&instance) {
-        Ok(surface) => surface,
-        Err(err) => {
-          panic!("{}", err.to_string())
-        }
+    let swapchain = match window.create_surface(&instance) {
+      Ok(surface) => surface,
+      Err(err) => {
+        panic!("{}", err.to_string())
       }
     };
 
@@ -85,14 +72,7 @@ impl Renderer {
     info!("adapter: {:?}", &adapter);
 
     let (device, queue) = adapter
-      .request_device(
-        &wgpu::DeviceDescriptor {
-          label: None,
-          features: wgpu::Features::default(),
-          limits: wgpu::Limits::default(),
-        },
-        None,
-      )
+      .request_device(&wgpu::DeviceDescriptor::default(), None)
       .await
       .expect("Device can't be created.");
 
@@ -147,6 +127,7 @@ impl Renderer {
       format: texture_format,
       width,
       height,
+      desired_maximum_frame_latency: 2,
       present_mode: wgpu::PresentMode::Fifo,
       alpha_mode,
       view_formats: vec![],

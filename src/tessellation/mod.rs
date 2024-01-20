@@ -240,14 +240,7 @@ mod tests {
       .unwrap();
 
     adapter
-      .request_device(
-        &wgpu::DeviceDescriptor {
-          label: None,
-          features: wgpu::Features::default(),
-          limits: wgpu::Limits::default(),
-        },
-        None,
-      )
+      .request_device(&wgpu::DeviceDescriptor::default(), None)
       .await
       .unwrap()
   }
