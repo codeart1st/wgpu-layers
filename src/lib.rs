@@ -1,7 +1,7 @@
 #![allow(incomplete_features)]
 #![feature(adt_const_params)]
 
-use log::error;
+use log::{error, info};
 use mvt_reader::feature::Feature;
 use ressource::tile::{Bucket, BucketType, Tile};
 use std::cell::{Cell, RefCell};
@@ -45,20 +45,20 @@ pub mod wasm {
   pub use wasm_bindgen_rayon::init_thread_pool;
 
   impl super::renderer::ToSurface for web_sys::OffscreenCanvas {
-    unsafe fn create_surface(
+    fn create_surface(
       &self,
       instance: &wgpu::Instance,
-    ) -> Result<wgpu::Surface, wgpu::CreateSurfaceError> {
-      instance.create_surface_from_offscreen_canvas(self.clone())
+    ) -> Result<wgpu::Surface<'static>, wgpu::CreateSurfaceError> {
+      instance.create_surface(wgpu::SurfaceTarget::OffscreenCanvas(self.clone()))
     }
   }
 
   impl super::renderer::ToSurface for web_sys::HtmlCanvasElement {
-    unsafe fn create_surface(
+    fn create_surface(
       &self,
       instance: &wgpu::Instance,
-    ) -> Result<wgpu::Surface, wgpu::CreateSurfaceError> {
-      instance.create_surface_from_canvas(self.clone())
+    ) -> Result<wgpu::Surface<'static>, wgpu::CreateSurfaceError> {
+      instance.create_surface(wgpu::SurfaceTarget::Canvas(self.clone()))
     }
   }
 
