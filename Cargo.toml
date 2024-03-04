@@ -14,19 +14,19 @@ crate-type = ["cdylib", "rlib"]
 multithreaded = []
 
 [dependencies]
-log = "0.4.20"
-wgpu = "0.19.0"
-rayon = "1.8.1"
+log = "0.4.21"
+wgpu = "0.19.2"
+rayon = "1.9.0"
 futures = "0.3.30"
-geo-types = "0.7.12"
-bytemuck = "1.14.0"
+geo-types = "0.7.13"
+bytemuck = "1.14.3"
 bytemuck_derive = "1.5.0"
 mvt-reader = "1.2.0"
 earcutr = "0.4.3"
 glam = { version = "0.25.0", default-features = false, features = ["libm", "bytemuck"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-wasm-bindgen = "0.2.90"
+wasm-bindgen = "0.2.91"
 wasm-bindgen-futures = "0.4.40"
 wasm-bindgen-rayon = "1.2.1" # alternative https://github.com/chemicstry/wasm_thread
 console_log = { version = "1.0.0", optional = true }
@@ -42,13 +42,13 @@ web-sys = { version = "0.3.64", features = [
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 pollster = "0.3.0"
-env_logger = "0.10.2"
+env_logger = "0.11.2"
 winit = "0.29"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.40"
 pdqhash = "0.1.1"
-js-sys = "0.3.67"
+js-sys = "0.3.68"
 
 [profile.release]
 opt-level = "s"
