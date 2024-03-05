@@ -31,7 +31,7 @@ wasm-bindgen-futures = "0.4.40"
 wasm-bindgen-rayon = "1.2.1" # alternative https://github.com/chemicstry/wasm_thread
 console_log = { version = "1.0.0", optional = true }
 console_error_panic_hook = { version = "0.1.7", optional = true }
-web-sys = { version = "0.3.64", features = [
+web-sys = { version = "0.3.69", features = [
   "OffscreenCanvas",
   "HtmlElement", # from here all features are for integrationtests
   "CssStyleDeclaration",
