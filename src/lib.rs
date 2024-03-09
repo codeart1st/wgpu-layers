@@ -179,7 +179,7 @@ fn process_tile_parser_queue() {
           let mut reference = instance.renderer.try_borrow_mut().unwrap();
           let renderer = reference.as_mut().unwrap();
 
-          if let Some(feature) = parsed_features.get(0) {
+          if let Some(feature) = parsed_features.first() {
             match feature.get_geometry() {
               &Point(_) | &MultiPoint(_) => {
                 let mut tile = renderer.create_tile::<Feature>(BucketType::Point, extent);
