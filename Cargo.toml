@@ -23,7 +23,7 @@ bytemuck = "1.15.0"
 bytemuck_derive = "1.6.0"
 mvt-reader = "1.2.0"
 earcutr = "0.4.3"
-glam = { version = "0.25.0", default-features = false, features = ["libm", "bytemuck"] }
+glam = { version = "0.26.0", default-features = false, features = ["libm", "bytemuck"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2.92"
