@@ -87,6 +87,7 @@ impl LineTessellation {
       layout: Some(&pipeline_layout),
       entry_point: "main",
       module: &shader_module,
+      compilation_options: wgpu::PipelineCompilationOptions::default(),
     });
 
     Self {
