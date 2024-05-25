@@ -12,6 +12,7 @@ impl CreatePipeline<{ MaterialType::Fill }> for Material {
         step_mode: wgpu::VertexStepMode::Vertex,
         attributes: &wgpu::vertex_attr_array![0 => Float32x2],
       }],
+      compilation_options: wgpu::PipelineCompilationOptions::default(),
     };
     let fragment_state = wgpu::FragmentState {
       module: shader_module,
@@ -21,6 +22,7 @@ impl CreatePipeline<{ MaterialType::Fill }> for Material {
         blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
         write_mask: wgpu::ColorWrites::default(),
       })],
+      compilation_options: wgpu::PipelineCompilationOptions::default(),
     };
     let pipeline = ressource_manager.create_render_pipeline(vertex_state, fragment_state);
 
