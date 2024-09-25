@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v4.2.0
         with:
           submodules: recursive
 
@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v4.2.0
         with:
           submodules: recursive
 
@@ -85,7 +85,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v4.2.0
         with:
           submodules: recursive
 
@@ -116,7 +116,7 @@ jobs:
         browser: [firefox] # disable chrome for now
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v4.2.0
         with:
           submodules: recursive
 
