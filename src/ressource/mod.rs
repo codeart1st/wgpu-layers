@@ -132,6 +132,7 @@ impl RessourceManager {
         multisample: wgpu::MultisampleState::default(),
         depth_stencil: None,
         multiview: None,
+        cache: None,
       })
   }
 

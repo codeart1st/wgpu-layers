@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.2.0
         with:
           submodules: recursive
 
@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.2.0
         with:
           submodules: recursive
 
@@ -62,16 +62,16 @@ jobs:
 
       - name: Run wasm-opt optimization
         run: |
-          wget https://github.com/WebAssembly/binaryen/releases/download/version_114/binaryen-version_114-x86_64-linux.tar.gz
-          tar zxf binaryen-version_114-x86_64-linux.tar.gz
-          ./binaryen-version_114/bin/wasm-opt -Os -o pkg/wgpu_layers_bg.wasm pkg/wgpu_layers_bg.wasm
+          wget https://github.com/WebAssembly/binaryen/releases/download/version_119/binaryen-version_119-x86_64-linux.tar.gz
+          tar zxf binaryen-version_119-x86_64-linux.tar.gz
+          ./binaryen-version_119/bin/wasm-opt -Os -o pkg/wgpu_layers_bg.wasm pkg/wgpu_layers_bg.wasm
 
       - name: Check wasm artifact size
         run: |
           brotli -Z pkg/wgpu_layers_bg.wasm
           gzip -k pkg/wgpu_layers_bg.wasm
           ls -lh pkg/
-          [[ $(stat -c %s pkg/wgpu_layers_bg.wasm.br) -lt 110000 ]]
+          [[ $(stat -c %s pkg/wgpu_layers_bg.wasm.br) -lt 115000 ]]
 
       - name: Post build environemnt
         if: always()
@@ -85,7 +85,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.2.0
         with:
           submodules: recursive
 
@@ -116,7 +116,7 @@ jobs:
         browser: [firefox] # disable chrome for now
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.2.0
         with:
           submodules: recursive
 

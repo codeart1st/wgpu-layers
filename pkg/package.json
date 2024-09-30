@@ -1,5 +1,6 @@
 {
   "name": "wgpu-layers",
+  "type": "module",
   "collaborators": [
     "Paul Lange <paul.lange@data-experts.de>"
   ],
@@ -15,7 +16,7 @@
     "wgpu_layers.js",
     "wgpu_layers.d.ts"
   ],
-  "module": "wgpu_layers.js",
+  "main": "wgpu_layers.js",
   "types": "wgpu_layers.d.ts",
   "sideEffects": [
     "./snippets/*"

@@ -57,7 +57,9 @@ export class OffscreenTileLayer extends Tile {
 
   createRenderer() {
     return {
-      ready: true
+      ready: true,
+      prepareFrame: this.prepareFrame.bind(this),
+      renderFrame: this.render.bind(this)
     }
   }
 
@@ -145,6 +147,14 @@ export class OffscreenTileLayer extends Tile {
     }
 
     Atomics.notify(new Int32Array(this.shared_state), 6, 1)
+  }
+
+  renderDeferred(frameState) {
+    // empty
+  }
+
+  prepareFrame(frameState) {
+    return this.ready
   }
 
   render(frameState) {
