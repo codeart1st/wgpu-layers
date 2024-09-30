@@ -62,9 +62,9 @@ jobs:
 
       - name: Run wasm-opt optimization
         run: |
-          wget https://github.com/WebAssembly/binaryen/releases/download/version_117/binaryen-version_117-x86_64-linux.tar.gz
-          tar zxf binaryen-version_117-x86_64-linux.tar.gz
-          ./binaryen-version_117/bin/wasm-opt -Os -o pkg/wgpu_layers_bg.wasm pkg/wgpu_layers_bg.wasm
+          wget https://github.com/WebAssembly/binaryen/releases/download/version_119/binaryen-version_119-x86_64-linux.tar.gz
+          tar zxf binaryen-version_119-x86_64-linux.tar.gz
+          ./binaryen-version_119/bin/wasm-opt -Os -o pkg/wgpu_layers_bg.wasm pkg/wgpu_layers_bg.wasm
 
       - name: Check wasm artifact size
         run: |
