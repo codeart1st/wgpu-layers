@@ -20,7 +20,7 @@ rayon = "1.10.0"
 futures = "0.3.30"
 geo-types = "0.7.13"
 bytemuck = "1.18.0"
-bytemuck_derive = "1.7.1"
+bytemuck_derive = "1.8.0"
 mvt-reader = "1.5.0"
 earcutr = "0.4.3"
 glam = { version = "0.29.0", default-features = false, features = ["libm", "bytemuck"] }
