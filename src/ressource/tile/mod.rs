@@ -71,7 +71,7 @@ impl Tile {
     ) {
       (Some(vertex_buffer), Some(index_buffer)) => {
         self.material.set(render_pass);
-        render_pass.set_bind_group(BindGroupScope::Model as u32, &self.bind_group, &[]);
+        render_pass.set_bind_group(BindGroupScope::Model as u32, Some(&self.bind_group), &[]);
 
         let (half_width, half_height) = view.get_half_size();
         let tile_uniform =
