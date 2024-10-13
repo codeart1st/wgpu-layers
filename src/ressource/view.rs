@@ -91,7 +91,7 @@ impl View {
     render_pass: &mut wgpu::RenderPass<'frame>,
     queue: &wgpu::Queue,
   ) {
-    render_pass.set_bind_group(BindGroupScope::Global as u32, &self.bind_group, &[]);
+    render_pass.set_bind_group(BindGroupScope::Global as u32, Some(&self.bind_group), &[]);
 
     queue.write_buffer(
       &self.view_matrix_buffer,

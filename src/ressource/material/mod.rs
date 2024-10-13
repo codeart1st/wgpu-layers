@@ -39,7 +39,7 @@ pub struct Material {
 impl Material {
   pub fn set<'frame>(&'frame self, render_pass: &mut wgpu::RenderPass<'frame>) {
     render_pass.set_pipeline(&self.pipeline);
-    render_pass.set_bind_group(BindGroupScope::Material as u32, &self.bind_group, &[]);
+    render_pass.set_bind_group(BindGroupScope::Material as u32, Some(&self.bind_group), &[]);
   }
 }
 

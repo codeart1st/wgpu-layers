@@ -85,7 +85,7 @@ impl LineTessellation {
     let pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
       label: None,
       layout: Some(&pipeline_layout),
-      entry_point: "main",
+      entry_point: Some("main"),
       module: &shader_module,
       compilation_options: wgpu::PipelineCompilationOptions::default(),
       cache: None,
@@ -197,7 +197,7 @@ impl LineTessellation {
       let mut pass = command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor::default());
 
       pass.set_pipeline(&self.pipeline);
-      pass.set_bind_group(0, &bind_group, &[]);
+      pass.set_bind_group(0, Some(&bind_group), &[]);
 
       let x = (indices.len() as f32 / WORK_GROUP_MAX_X).ceil() as u32;
       pass.dispatch_workgroups(x, 1, 1);

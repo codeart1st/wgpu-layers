@@ -6,7 +6,7 @@ impl CreatePipeline<{ MaterialType::Line }> for Material {
   fn new(ressource_manager: &RessourceManager, shader_module: &wgpu::ShaderModule) -> Self {
     let vertex_state = wgpu::VertexState {
       module: shader_module,
-      entry_point: "vs_stroke",
+      entry_point: Some("vs_stroke"),
       buffers: &[wgpu::VertexBufferLayout {
         array_stride: 16,
         step_mode: wgpu::VertexStepMode::Vertex,
@@ -16,7 +16,7 @@ impl CreatePipeline<{ MaterialType::Line }> for Material {
     };
     let fragment_state = wgpu::FragmentState {
       module: shader_module,
-      entry_point: "fs_stroke",
+      entry_point: Some("fs_stroke"),
       targets: &[Some(wgpu::ColorTargetState {
         format: ressource_manager.texture_format,
         blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
