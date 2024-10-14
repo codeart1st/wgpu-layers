@@ -1021,7 +1021,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4979f22fdb869068da03c9f7528f8297c6fd2606bc3a4affe42e6a823fdb8da4"
 dependencies = [
  "cfg-if",
- "windows-targets 0.52.6",
+ "windows-targets 0.48.5",
 ]
 
 [[package]]
@@ -1157,7 +1157,7 @@ dependencies = [
 [[package]]
 name = "naga"
 version = "22.0.0"
-source = "git+https://github.com/gfx-rs/wgpu.git#2b15a2b24b69e105ebdbb5e8a859e2df75e441c1"
+source = "git+https://github.com/gfx-rs/wgpu.git#fe7fbd4a4abd0d9e8269c9df5e1dd3f8846d6462"
 dependencies = [
  "arrayvec",
  "bit-set",
@@ -2432,7 +2432,7 @@ checksum = "53a85b86a771b1c87058196170769dd264f66c0782acf1ae6cc51bfd64b39082"
 [[package]]
 name = "wgpu"
 version = "22.0.0"
-source = "git+https://github.com/gfx-rs/wgpu.git#2b15a2b24b69e105ebdbb5e8a859e2df75e441c1"
+source = "git+https://github.com/gfx-rs/wgpu.git#fe7fbd4a4abd0d9e8269c9df5e1dd3f8846d6462"
 dependencies = [
  "arrayvec",
  "cfg_aliases 0.1.1",
@@ -2456,7 +2456,7 @@ dependencies = [
 [[package]]
 name = "wgpu-core"
 version = "22.0.0"
-source = "git+https://github.com/gfx-rs/wgpu.git#2b15a2b24b69e105ebdbb5e8a859e2df75e441c1"
+source = "git+https://github.com/gfx-rs/wgpu.git#fe7fbd4a4abd0d9e8269c9df5e1dd3f8846d6462"
 dependencies = [
  "arrayvec",
  "bit-vec",
@@ -2480,7 +2480,7 @@ dependencies = [
 [[package]]
 name = "wgpu-hal"
 version = "22.0.0"
-source = "git+https://github.com/gfx-rs/wgpu.git#2b15a2b24b69e105ebdbb5e8a859e2df75e441c1"
+source = "git+https://github.com/gfx-rs/wgpu.git#fe7fbd4a4abd0d9e8269c9df5e1dd3f8846d6462"
 dependencies = [
  "android_system_properties",
  "arrayvec",
@@ -2552,7 +2552,7 @@ dependencies = [
 [[package]]
 name = "wgpu-types"
 version = "22.0.0"
-source = "git+https://github.com/gfx-rs/wgpu.git#2b15a2b24b69e105ebdbb5e8a859e2df75e441c1"
+source = "git+https://github.com/gfx-rs/wgpu.git#fe7fbd4a4abd0d9e8269c9df5e1dd3f8846d6462"
 dependencies = [
  "bitflags 2.6.0",
  "js-sys",
@@ -2565,7 +2565,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
