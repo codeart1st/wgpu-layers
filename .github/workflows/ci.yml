@@ -140,7 +140,7 @@ jobs:
         run: google-chrome --version
 
       - name: Run wasm-pack test
-        run: xvfb-run -a -s "-screen 0 1920x1080x24" wasm-pack test --${{ matrix.browser }} --headless --release --features console_log,console_error_panic_hook --test '*'
+        run: xvfb-run -a -s "-screen 0 1920x1080x24" wasm-pack test --${{ matrix.browser }} --headless --release --test '*'
 
       - name: Post build environemnt
         if: always()
