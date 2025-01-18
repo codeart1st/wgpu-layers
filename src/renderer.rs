@@ -45,8 +45,8 @@ pub trait ToSurface {
 
 impl Renderer {
   pub async fn new<W: ToSurface>(window: &W, (width, height): (u32, u32)) -> Self {
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-      backends: wgpu::util::backend_bits_from_env().unwrap_or(wgpu::Backends::all()),
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+      backends: wgpu::Backends::from_env().unwrap_or(wgpu::Backends::all()),
       ..Default::default()
     });
 
@@ -61,7 +61,7 @@ impl Renderer {
 
     let adapter = instance
       .request_adapter(&wgpu::RequestAdapterOptions {
-        power_preference: wgpu::util::power_preference_from_env()
+        power_preference: wgpu::PowerPreference::from_env()
           .unwrap_or(wgpu::PowerPreference::HighPerformance),
         force_fallback_adapter: false,
         compatible_surface: Some(&swapchain),
