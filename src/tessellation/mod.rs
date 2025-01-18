@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use wgpu::util::DeviceExt;
 
 static WORK_GROUP_MAX_X: f32 = 256.0;
@@ -226,8 +227,8 @@ mod tests {
       env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
     );
 
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-      backends: wgpu::util::backend_bits_from_env().unwrap_or(wgpu::Backends::all()),
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+      backends: wgpu::Backends::from_env().unwrap_or(wgpu::Backends::all()),
       ..Default::default()
     });
 
@@ -305,7 +306,7 @@ mod tests {
     let vertices = [0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0];
     let indices = [0, 1, 2, 3, 0];
 
-    let line_tessellation = LineTessellation::new((device.clone(), queue.clone()));
+    let line_tessellation = Arc::new(LineTessellation::new((device.clone(), queue.clone())));
 
     let line_tessellation1 = line_tessellation.clone();
     let device1 = device.clone();
