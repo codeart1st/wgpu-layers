@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use wgpu::util::DeviceExt;
 
 static WORK_GROUP_MAX_X: f32 = 256.0;
@@ -214,6 +213,7 @@ impl LineTessellation {
 mod tests {
   use super::*;
   use log::info;
+  use std::sync::Arc;
 
   #[repr(C)]
   #[derive(Debug, Default, Copy, Clone, bytemuck_derive::Pod, bytemuck_derive::Zeroable)]
