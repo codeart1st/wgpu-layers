@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use log::info;
 
 use crate::{
@@ -16,7 +14,7 @@ const PREFERRED_ALPHA_MODE: wgpu::CompositeAlphaMode = wgpu::CompositeAlphaMode:
 
 pub struct Renderer {
   /// wgpu device queue pair
-  pub device_queue: (Arc<wgpu::Device>, Arc<wgpu::Queue>),
+  pub device_queue: (wgpu::Device, wgpu::Queue),
 
   /// preferred texutre format of surface
   pub texture_format: wgpu::TextureFormat,
@@ -77,12 +75,6 @@ impl Renderer {
       .expect("Device can't be created.");
 
     info!("device: {:?}", device);
-
-    #[allow(clippy::arc_with_non_send_sync)]
-    let device = Arc::new(device);
-
-    #[allow(clippy::arc_with_non_send_sync)]
-    let queue = Arc::new(queue);
 
     let swapchain_capabilities = swapchain.get_capabilities(&adapter);
 

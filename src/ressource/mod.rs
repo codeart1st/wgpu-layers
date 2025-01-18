@@ -33,7 +33,7 @@ enum ShaderModuleScope {
 
 // help to manage wgpu ressources
 pub struct RessourceManager {
-  device: Arc<wgpu::Device>,
+  device: wgpu::Device,
 
   texture_format: wgpu::TextureFormat,
 
@@ -47,7 +47,7 @@ pub struct RessourceManager {
 }
 
 impl RessourceManager {
-  pub fn new(device: Arc<wgpu::Device>, texture_format: wgpu::TextureFormat) -> Self {
+  pub fn new(device: wgpu::Device, texture_format: wgpu::TextureFormat) -> Self {
     let empty_desc = &wgpu::BindGroupLayoutDescriptor {
       label: None,
       entries: &[],

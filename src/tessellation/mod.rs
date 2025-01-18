@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use wgpu::util::DeviceExt;
 
 static WORK_GROUP_MAX_X: f32 = 256.0;
@@ -12,7 +11,7 @@ struct OutputVertex {
 
 pub struct LineTessellation {
   /// wgpu device and queue pair
-  device_queue: (Arc<wgpu::Device>, Arc<wgpu::Queue>),
+  device_queue: (wgpu::Device, wgpu::Queue),
 
   /// wgpu pipeline
   pipeline: wgpu::ComputePipeline,
@@ -22,7 +21,7 @@ pub struct LineTessellation {
 }
 
 impl LineTessellation {
-  pub fn new((device, queue): (Arc<wgpu::Device>, Arc<wgpu::Queue>)) -> Self {
+  pub fn new((device, queue): (wgpu::Device, wgpu::Queue)) -> Self {
     let shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
       label: None,
       source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!(
@@ -248,7 +247,7 @@ mod tests {
   }
 
   async fn map_and_log_buffer<F>(
-    (device, queue): (Arc<wgpu::Device>, Arc<wgpu::Queue>),
+    (device, queue): (wgpu::Device, wgpu::Queue),
     src_buffer: &wgpu::Buffer,
     src_buffer_size: u64,
     from_bytes: F,
@@ -302,13 +301,11 @@ mod tests {
   #[test]
   fn compute_lines() {
     let (device, queue) = pollster::block_on(initialize_test());
-    let device = Arc::new(device);
-    let queue = Arc::new(queue);
 
     let vertices = [0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0];
     let indices = [0, 1, 2, 3, 0];
 
-    let line_tessellation = Arc::new(LineTessellation::new((device.clone(), queue.clone())));
+    let line_tessellation = LineTessellation::new((device.clone(), queue.clone()));
 
     let line_tessellation1 = line_tessellation.clone();
     let device1 = device.clone();
