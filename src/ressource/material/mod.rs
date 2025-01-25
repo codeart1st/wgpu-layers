@@ -51,7 +51,7 @@ where
 }
 
 pub struct MaterialManager {
-  shader_module: Arc<wgpu::ShaderModule>,
+  shader_module: wgpu::ShaderModule,
 
   materials: HashMap<MaterialType, Arc<Material>>,
 }

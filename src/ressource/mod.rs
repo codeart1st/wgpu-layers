@@ -43,7 +43,7 @@ pub struct RessourceManager {
 
   bind_group_layouts: [wgpu::BindGroupLayout; 3],
 
-  shader_modules: HashMap<ShaderModuleScope, Arc<wgpu::ShaderModule>>,
+  shader_modules: HashMap<ShaderModuleScope, wgpu::ShaderModule>,
 }
 
 impl RessourceManager {
@@ -74,16 +74,14 @@ impl RessourceManager {
     &mut self,
     scope: ShaderModuleScope,
     code: Cow<str>,
-  ) -> Arc<wgpu::ShaderModule> {
+  ) -> wgpu::ShaderModule {
     #[allow(clippy::arc_with_non_send_sync)]
-    let shader_module = Arc::new(
-      self
-        .device
-        .create_shader_module(wgpu::ShaderModuleDescriptor {
-          label: None,
-          source: wgpu::ShaderSource::Wgsl(code),
-        }),
-    );
+    let shader_module = self
+      .device
+      .create_shader_module(wgpu::ShaderModuleDescriptor {
+        label: None,
+        source: wgpu::ShaderSource::Wgsl(code),
+      });
     let result = shader_module.clone();
     self.shader_modules.insert(scope, shader_module);
     result
