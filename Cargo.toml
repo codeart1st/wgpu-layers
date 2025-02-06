@@ -43,7 +43,7 @@ web-sys = { version = "0.3.76", features = [
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 pollster = "0.4.0"
 env_logger = "0.11.6"
-winit = "0.30.7"
+winit = "0.30.9"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.49"
