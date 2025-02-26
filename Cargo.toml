@@ -21,7 +21,7 @@ futures = "0.3.31"
 geo-types = "0.7.15"
 bytemuck = "1.21.0"
 bytemuck_derive = "1.8.1"
-mvt-reader = "1.6.0"
+mvt-reader = "2.0.0"
 earcutr = "0.4.3"
 glam = { version = "0.30.0", default-features = false, features = ["libm", "bytemuck"] }
 
