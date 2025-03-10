@@ -1139,9 +1139,9 @@ checksum = "defc4c55412d89136f966bbb339008b474350e5e6e78d2714439c386b3137a03"
 
 [[package]]
 name = "mvt-reader"
-version = "2.0.0"
+version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b0c2f49f4458ca65a13606a27962b56f41f894be0625be4e09c1656c702339a"
+checksum = "812045eca962923160fe2492996b44314c056ca7fd6ab0f4ad2ce00c11e6e1b5"
 dependencies = [
  "geo-types",
  "prost",
