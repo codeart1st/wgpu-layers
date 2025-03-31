@@ -2,7 +2,7 @@ use geo_types::Geometry::{MultiPolygon, Polygon};
 use log::{error, info};
 use mvt_reader::feature::Feature;
 
-use crate::ressource::{material::MaterialType, BindGroupScope, RessourceManager};
+use crate::ressource::{BindGroupScope, RessourceManager, material::MaterialType};
 
 use super::{Bucket, BucketType, Tile, TileUniform};
 
@@ -60,13 +60,11 @@ impl<F> Bucket<F, { BucketType::Fill }> for Tile {
         contents: bytemuck::cast_slice(&[tile_uniform]),
         usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
       });
-    let bind_group = ressource_manager.create_bind_group(
-      &BindGroupScope::Model,
-      &[wgpu::BindGroupEntry {
+    let bind_group =
+      ressource_manager.create_bind_group(&BindGroupScope::Model, &[wgpu::BindGroupEntry {
         binding: 0,
         resource: tile_uniform_buffer.as_entire_binding(),
-      }],
-    );
+      }]);
 
     Self {
       material: ressource_manager.get_material(MaterialType::Fill),

@@ -2,7 +2,7 @@ use geo_types::Geometry::{MultiPoint, Point};
 use log::info;
 use mvt_reader::feature::Feature;
 
-use crate::ressource::{material::MaterialType, BindGroupScope, RessourceManager};
+use crate::ressource::{BindGroupScope, RessourceManager, material::MaterialType};
 
 use super::{Bucket, BucketType, Tile, TileUniform};
 
@@ -20,13 +20,11 @@ impl<F> Bucket<F, { BucketType::Point }> for Tile {
         contents: bytemuck::cast_slice(&[tile_uniform]),
         usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
       });
-    let bind_group = ressource_manager.create_bind_group(
-      &BindGroupScope::Model,
-      &[wgpu::BindGroupEntry {
+    let bind_group =
+      ressource_manager.create_bind_group(&BindGroupScope::Model, &[wgpu::BindGroupEntry {
         binding: 0,
         resource: tile_uniform_buffer.as_entire_binding(),
-      }],
-    );
+      }]);
 
     let vertex_wgpu_buffer = Some(ressource_manager.create_buffer_init(
       &wgpu::util::BufferInitDescriptor {

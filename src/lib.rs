@@ -7,7 +7,7 @@ use ressource::tile::{Bucket, BucketType, Tile};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::sync::mpsc::TryRecvError::{Disconnected, Empty};
-use std::sync::mpsc::{channel, Receiver, Sender};
+use std::sync::mpsc::{Receiver, Sender, channel};
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
@@ -166,82 +166,84 @@ fn get_buffers(features: &[Feature]) -> (Vec<f32>, Vec<u32>) {
 }
 
 fn process_tile_parser_queue() {
-  TILE_PARSER_QUEUE.with(|(_, receiver)| loop {
-    match receiver.try_recv() {
-      Ok(msg) => {
-        let mut parsed_features = msg.parsed_features;
-        if parsed_features.is_empty() {
-          return;
-        }
-
-        INSTANCE.with(|instance| {
-          let extent: [f32; 4] = msg.extent.try_into().unwrap();
-          let mut reference = instance.renderer.try_borrow_mut().unwrap();
-          let renderer = reference.as_mut().unwrap();
-
-          if let Some(feature) = parsed_features.first() {
-            match feature.get_geometry() {
-              &Point(_) | &MultiPoint(_) => {
-                let mut tile = renderer.create_tile::<Feature>(BucketType::Point, extent);
-
-                if tile.get_bucket_type() == BucketType::Point {
-                  <Tile as Bucket<Feature, { BucketType::Point }>>::add_features(
-                    &mut tile,
-                    &mut parsed_features,
-                    &renderer.ressource_manager,
-                  );
-                }
-
-                instance.tiles.borrow_mut().push(tile);
-              }
-              &LineString(_) | &MultiLineString(_) => {
-                #[cfg(target_arch = "wasm32")]
-                {
-                  let (vertices, indices) = get_buffers(&parsed_features[..]);
-
-                  let clone = instance.renderer.clone();
-                  let tiles = instance.tiles.clone();
-
-                  #[allow(clippy::await_holding_refcell_ref)]
-                  wasm_bindgen_futures::spawn_local(async move {
-                    let mut reference = clone.borrow_mut();
-                    let renderer = reference.as_mut().unwrap();
-                    let (vertices_buffer, indices_buffer) =
-                      renderer.compute(&vertices[..], &indices[..]).await;
-
-                    let mut tile = renderer.create_tile::<Feature>(BucketType::Line, extent);
-                    tile.add_buffers(vertices_buffer, indices_buffer);
-                    tiles.borrow_mut().push(tile);
-                  });
-                }
-              }
-              &Polygon(_) | &MultiPolygon(_) => {
-                let mut tile = renderer.create_tile::<Feature>(BucketType::Fill, extent);
-
-                if tile.get_bucket_type() == BucketType::Fill {
-                  <Tile as Bucket<Feature, { BucketType::Fill }>>::add_features(
-                    &mut tile,
-                    &mut parsed_features,
-                    &renderer.ressource_manager,
-                  );
-                }
-
-                instance.tiles.borrow_mut().push(tile);
-              }
-              _ => (),
-            }
+  TILE_PARSER_QUEUE.with(|(_, receiver)| {
+    loop {
+      match receiver.try_recv() {
+        Ok(msg) => {
+          let mut parsed_features = msg.parsed_features;
+          if parsed_features.is_empty() {
+            return;
           }
-        });
+
+          INSTANCE.with(|instance| {
+            let extent: [f32; 4] = msg.extent.try_into().unwrap();
+            let mut reference = instance.renderer.try_borrow_mut().unwrap();
+            let renderer = reference.as_mut().unwrap();
+
+            if let Some(feature) = parsed_features.first() {
+              match feature.get_geometry() {
+                &Point(_) | &MultiPoint(_) => {
+                  let mut tile = renderer.create_tile::<Feature>(BucketType::Point, extent);
+
+                  if tile.get_bucket_type() == BucketType::Point {
+                    <Tile as Bucket<Feature, { BucketType::Point }>>::add_features(
+                      &mut tile,
+                      &mut parsed_features,
+                      &renderer.ressource_manager,
+                    );
+                  }
+
+                  instance.tiles.borrow_mut().push(tile);
+                }
+                &LineString(_) | &MultiLineString(_) => {
+                  #[cfg(target_arch = "wasm32")]
+                  {
+                    let (vertices, indices) = get_buffers(&parsed_features[..]);
+
+                    let clone = instance.renderer.clone();
+                    let tiles = instance.tiles.clone();
+
+                    #[allow(clippy::await_holding_refcell_ref)]
+                    wasm_bindgen_futures::spawn_local(async move {
+                      let mut reference = clone.borrow_mut();
+                      let renderer = reference.as_mut().unwrap();
+                      let (vertices_buffer, indices_buffer) =
+                        renderer.compute(&vertices[..], &indices[..]).await;
+
+                      let mut tile = renderer.create_tile::<Feature>(BucketType::Line, extent);
+                      tile.add_buffers(vertices_buffer, indices_buffer);
+                      tiles.borrow_mut().push(tile);
+                    });
+                  }
+                }
+                &Polygon(_) | &MultiPolygon(_) => {
+                  let mut tile = renderer.create_tile::<Feature>(BucketType::Fill, extent);
+
+                  if tile.get_bucket_type() == BucketType::Fill {
+                    <Tile as Bucket<Feature, { BucketType::Fill }>>::add_features(
+                      &mut tile,
+                      &mut parsed_features,
+                      &renderer.ressource_manager,
+                    );
+                  }
+
+                  instance.tiles.borrow_mut().push(tile);
+                }
+                _ => (),
+              }
+            }
+          });
+        }
+        Err(err) => match err {
+          Disconnected => {
+            error!("{}", err);
+            break;
+          }
+          Empty => {
+            break;
+          }
+        },
       }
-      Err(err) => match err {
-        Disconnected => {
-          error!("{}", err.to_string());
-          break;
-        }
-        Empty => {
-          break;
-        }
-      },
     }
   });
 }

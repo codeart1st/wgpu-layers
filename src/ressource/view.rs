@@ -67,13 +67,11 @@ impl View {
       },
     );
 
-    let bind_group = ressource_manager.create_bind_group(
-      &BindGroupScope::Global,
-      &[wgpu::BindGroupEntry {
+    let bind_group =
+      ressource_manager.create_bind_group(&BindGroupScope::Global, &[wgpu::BindGroupEntry {
         binding: 0,
         resource: view_matrix_buffer.as_entire_binding(),
-      }],
-    );
+      }]);
 
     Self {
       bind_group,

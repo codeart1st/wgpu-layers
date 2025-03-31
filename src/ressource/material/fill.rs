@@ -37,13 +37,11 @@ impl CreatePipeline<{ MaterialType::Fill }> for Material {
       contents: bytemuck::cast_slice(&[style]),
       usage: wgpu::BufferUsages::UNIFORM,
     });
-    let bind_group = ressource_manager.create_bind_group(
-      &BindGroupScope::Material,
-      &[wgpu::BindGroupEntry {
+    let bind_group =
+      ressource_manager.create_bind_group(&BindGroupScope::Material, &[wgpu::BindGroupEntry {
         binding: 0,
         resource: style_buffer.as_entire_binding(),
-      }],
-    );
+      }]);
 
     Self {
       pipeline,

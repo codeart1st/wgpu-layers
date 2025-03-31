@@ -2,9 +2,9 @@ use log::info;
 
 use crate::{
   ressource::{
+    RessourceManager,
     tile::{BucketType, Tile},
     view::View,
-    RessourceManager,
   },
   tessellation::LineTessellation,
 };

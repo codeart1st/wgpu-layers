@@ -3,7 +3,7 @@ use std::{marker::ConstParamTy, mem::size_of, num::NonZeroU64, sync::Arc};
 use log::info;
 use mvt_reader::feature::Feature;
 
-use super::{material::Material, view::View, BindGroupScope, RessourceManager};
+use super::{BindGroupScope, RessourceManager, material::Material, view::View};
 
 mod fill;
 mod line;
