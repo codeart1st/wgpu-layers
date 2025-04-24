@@ -71,7 +71,7 @@ jobs:
           brotli -Z pkg/wgpu_layers_bg.wasm
           gzip -k pkg/wgpu_layers_bg.wasm
           ls -lh pkg/
-          [[ $(stat -c %s pkg/wgpu_layers_bg.wasm.br) -lt 135000 ]]
+          [[ $(stat -c %s pkg/wgpu_layers_bg.wasm.br) -lt 102000 ]]
 
       - name: Post build environemnt
         if: always()
