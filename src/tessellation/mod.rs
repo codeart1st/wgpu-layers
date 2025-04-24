@@ -242,7 +242,7 @@ mod tests {
       .unwrap();
 
     adapter
-      .request_device(&wgpu::DeviceDescriptor::default(), None)
+      .request_device(&wgpu::DeviceDescriptor::default())
       .await
       .unwrap()
   }
@@ -282,7 +282,9 @@ mod tests {
       },
     });
 
-    device.poll(wgpu::Maintain::WaitForSubmissionIndex(submission_index)); // has no effect for web target
+    device
+      .poll(wgpu::PollType::WaitForSubmissionIndex(submission_index))
+      .unwrap(); // has no effect for web target
 
     match receiver.await {
       Ok(rec_result) => match rec_result {
