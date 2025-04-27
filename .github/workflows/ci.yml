@@ -4,7 +4,6 @@ on:
   schedule:
     - cron: "0 7 * * 1"
   push:
-  pull_request:
 
 env:
   CARGO_TERM_COLOR: always
@@ -31,11 +30,6 @@ jobs:
         run: |
           cargo clippy --target wasm32-unknown-unknown \
             --tests --all-features -- --deny "warnings"
-        #TODO: this should be integrated for PR builds
-        #uses: actions-rs/clippy-check@v1.0.7
-        #with:
-        #  token: ${{ secrets.GITHUB_TOKEN }}
-        #  args: --target wasm32-unknown-unknown --tests --all-features
 
       - name: Post build environemnt
         if: always()
