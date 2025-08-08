@@ -19,7 +19,7 @@ wgpu = { version = "25.0.2", default-features = false, features = ["wgsl", "webg
 rayon = "1.10.0"
 futures = "0.3.31"
 geo-types = "0.7.17"
-bytemuck = "1.23.1"
+bytemuck = "1.23.2"
 bytemuck_derive = "1.10.1"
 mvt-reader = "2.1.0"
 earcutr = "0.5.0"
