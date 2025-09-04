@@ -14,7 +14,7 @@ crate-type = ["cdylib", "rlib"]
 multithreaded = []
 
 [dependencies]
-log = "0.4.27"
+log = "0.4.28"
 wgpu = { version = "25.0.2", default-features = false, features = ["wgsl", "webgpu", "vulkan"]}
 rayon = "1.11.0"
 futures = "0.3.31"
