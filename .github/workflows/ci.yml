@@ -124,7 +124,7 @@ jobs:
       - name: Use firefox nightly
         if: matrix.browser == 'firefox'
         run: |
-          url=https://ftp.mozilla.org/pub/firefox/nightly/2025/07/2025-07-24-09-34-17-mozilla-central/
+          url=https://download-installer.cdn.mozilla.net/pub/firefox/nightly/latest-mozilla-central/
           latest_version=$(curl -s $url | grep -o 'firefox-[0-9.]\+\.0a1\.en-US\.linux-x86_64\.tar\.xz' | sort -V | tail -n 1)
           wget $url$latest_version
           mkdir /tmp/firefox-nightly && tar -xf *.tar.xz -C /tmp/firefox-nightly
