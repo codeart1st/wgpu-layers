@@ -16,7 +16,7 @@ multithreaded = []
 [dependencies]
 log = "0.4.29"
 wgpu = { version = "25.0.2", default-features = false, features = ["wgsl", "webgpu", "vulkan"]}
-rayon = "1.11.0"
+rayon = "1.12.0"
 futures = "0.3.32"
 geo-types = "0.7.18"
 bytemuck = "1.25.0"
