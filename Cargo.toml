@@ -18,7 +18,7 @@ log = "0.4.29"
 wgpu = { version = "25.0.2", default-features = false, features = ["wgsl", "webgpu", "vulkan"]}
 rayon = "1.12.0"
 futures = "0.3.32"
-geo-types = "0.7.18"
+geo-types = "0.7.19"
 bytemuck = "1.25.0"
 bytemuck_derive = "1.10.1"
 mvt-reader = "2.3.0"
