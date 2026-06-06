@@ -14,16 +14,16 @@ crate-type = ["cdylib", "rlib"]
 multithreaded = []
 
 [dependencies]
-log = "0.4.29"
+log = "0.4.32"
 wgpu = { version = "25.0.2", default-features = false, features = ["wgsl", "webgpu", "vulkan"]}
-rayon = "1.11.0"
+rayon = "1.12.0"
 futures = "0.3.32"
-geo-types = "0.7.18"
+geo-types = "0.7.19"
 bytemuck = "1.25.0"
 bytemuck_derive = "1.10.1"
 mvt-reader = "2.3.0"
 earcutr = "0.5.0"
-glam = { version = "0.32.1", default-features = false, features = ["libm", "bytemuck"] }
+glam = { version = "0.33.0", default-features = false, features = ["libm", "bytemuck"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2.99"

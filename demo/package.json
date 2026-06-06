@@ -10,10 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "ol": "10.8.0",
+    "ol": "10.9.0",
     "wgpu-layers": "file:../pkg"
   },
   "devDependencies": {
-    "vite": "8.0.3"
+    "vite": "8.0.16"
   }
 }
